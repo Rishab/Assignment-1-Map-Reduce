@@ -17,7 +17,7 @@ typedef struct _LittleNode {
   char* file_name;
   int count;
   struct _LittleNode* next;
-} Node;
+} LittleNode;
 
 /* definition of nodes in the "big" (i.e. word-focused) linked list */
 typedef struct _BigNode {
@@ -90,7 +90,7 @@ int insert(char* s, char* f) {
   new_big->little_head = new_little;
 
   /*tmp1 and tmp0 are pointers to traverse the linked list while inserting*/
-  tmp1 = head; //leading pointer
+  tmp1 = big_head; //leading pointer
   BigNode* tmp0 = head; //trailing pointer
 
   /* while loop to go to the end of the linked list in the new node is greater than all of the nodes*/
@@ -104,7 +104,7 @@ int insert(char* s, char* f) {
 
       /* case that the node should be inserted to the front of the list */
       if (tmp0 == tmp1) {
-        head = new_big;
+        big_head = new_big;
       }
       /* case that the node should be inserted in the middle of the list */
       else {
@@ -129,7 +129,7 @@ int insert(char* s, char* f) {
     tmp1 = tmp1->next;
   }
 
-  tmp1->next = head;
+  tmp1->next = big_head;
   head = tmp1;
   return 0;
 }

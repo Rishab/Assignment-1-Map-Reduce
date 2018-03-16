@@ -22,7 +22,7 @@ typedef struct _LittleNode {
 /* definition of nodes in the "big" (i.e. word-focused) linked list */
 typedef struct _BigNode {
   char* word;
-  LittleNode* litte_head;
+  LittleNode* little_head;
   struct _BigNode* next;
 } BigNode;
 
@@ -42,7 +42,7 @@ int insert(char* s, char* f) {
     new_little->next = NULL;
     new_big->little_head = new_little;
     new_big->next = NULL;
-    big_head = new_big
+    big_head = new_big;
     return 0;
   }
 
@@ -80,7 +80,7 @@ int insert(char* s, char* f) {
   }
 
   /* the word does not exist yet, so makes a new node for it */
-  
+
   BigNode* new_big = (BigNode*) malloc(sizeof(BigNode));
   new_big->word = s;
   LittleNode* new_little = (LittleNode*) malloc(sizeof(LittleNode));
@@ -91,7 +91,7 @@ int insert(char* s, char* f) {
 
   /*tmp1 and tmp0 are pointers to traverse the linked list while inserting*/
   tmp1 = big_head; //leading pointer
-  BigNode* tmp0 = head; //trailing pointer
+  BigNode* tmp0 = big_head; //trailing pointer
 
   /* while loop to go to the end of the linked list in the new node is greater than all of the nodes*/
   while (tmp1 != NULL) {
@@ -130,7 +130,7 @@ int insert(char* s, char* f) {
   }
 
   tmp1->next = big_head;
-  head = tmp1;
+  big_head = tmp1;
   return 0;
 }
 
@@ -142,7 +142,7 @@ int printList() {
   /* loop to iterate through the big list */
   while (tmp1 != NULL) {
     printf("%s\n", tmp1->word);
-    LittleNode* tmp2 = big_head;
+    LittleNode * tmp2 = big_head->little_head;
     /* loop to iterate through the little list */
     while (tmp2 != NULL) {
       printf("%s: %d", tmp2->file_name, tmp2->count);
@@ -158,8 +158,8 @@ int printList() {
 without any memory leaks */
 int freeList() {
   /* pointers used to free the list */
-  struct node* tmp0; //leading pointer
-  struct node* tmp1 = big_head; //trailing pointer
+  BigNode * tmp0; //leading pointer
+  BigNode * tmp1 = big_head; //trailing pointer
 
   /* Loop to iterate through the list. It frees the current node's fields (including the list it points to), then moves to the next node, and so on */
   while (tmp1 != NULL){
@@ -170,7 +170,6 @@ int freeList() {
     while (tmp3 != NULL){
       tmp2 = tmp3->next;
       free(tmp3->file_name);
-      free(tmp3->count);
       free(tmp3);
       tmp3 = tmp2;
     }
@@ -220,7 +219,7 @@ int main(int argc, char** argv) {
 
 
 /* things TODO:
-  
+
 [ ] make file reader that creates a buffer and tokenizes each word, converting each character to lowercase
 
 [ ] make sure that each input to insert() is a proper string! (ends in '\0')

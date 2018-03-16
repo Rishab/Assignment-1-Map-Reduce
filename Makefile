@@ -1,7 +1,7 @@
 all: invertedIndex
+	gcc -Wall -fsanitize=address -o invertedIndex invertedIndex.c
 
 invertedIndex: invertedIndex.c
-	gcc -Wall -Werror -fsanitize=address invertedIndex.c -o invertedIndex
 
 clean:
 	rm -rf invertedIndex

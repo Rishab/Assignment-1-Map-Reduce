@@ -1,7 +1,11 @@
 #include <unistd.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h> //TODO see if this is necessary
+#include <dirent.h>
+#include <errno.h>
 
 /*
  * invertedIndex.c
@@ -80,7 +84,7 @@ int insert(char* s, char* f) {
   }
 
   /* the word does not exist yet, so makes a new node for it */
-
+  
   BigNode* new_big = (BigNode*) malloc(sizeof(BigNode));
   new_big->word = s;
   LittleNode* new_little = (LittleNode*) malloc(sizeof(LittleNode));
@@ -142,10 +146,10 @@ int printList() {
   /* loop to iterate through the big list */
   while (tmp1 != NULL) {
     printf("%s\n", tmp1->word);
-    LittleNode * tmp2 = big_head->little_head;
+    LittleNode* tmp2 = big_head->little_head;
     /* loop to iterate through the little list */
     while (tmp2 != NULL) {
-      printf("%s: %d", tmp2->file_name, tmp2->count);
+      printf("  %s: %d\n", tmp2->file_name, tmp2->count);
       tmp2 = tmp2->next;
     }
 
@@ -158,8 +162,8 @@ int printList() {
 without any memory leaks */
 int freeList() {
   /* pointers used to free the list */
-  BigNode * tmp0; //leading pointer
-  BigNode * tmp1 = big_head; //trailing pointer
+  BigNode* tmp0; //leading pointer
+  BigNode* tmp1 = big_head; //trailing pointer
 
   /* Loop to iterate through the list. It frees the current node's fields (including the list it points to), then moves to the next node, and so on */
   while (tmp1 != NULL){
@@ -205,21 +209,159 @@ int len(char* str) {
   return l;
 }
 
+/* function to determine if the input string is the name of a valid directory. returns -2 if yes, returns a file descriptor if input string is suspected to be a file, returns -1 if invalid or nonexistent */
+int isDirectory(char* str) {
+
+  // effectively removes the trailing forward slash, if it exists in the input statement
+  if (str[len(str) - 1] == '/') {
+    str[len(str) - 1] = '\0';
+  }
+
+  // finds if the input string has a forbidden name (i.e. do not try to open this) and if so, returns -1
+  if (strcmp(str, ".") == 0 || strcmp(str, "..") == 0 || strcmp(str, ".git") == 0 || strcmp(str, ".DS_store") == 0) {
+    printf("Found %s to have an invalid name\n", str);
+    return -1;
+  }
+  
+  // opens the string in directory-only mode
+  int fd = open(str, O_DIRECTORY);
+  // checks to see if input is a directory
+  if (fd != -1) {
+    // input is a directory, so return 1
+      printf("Found %s is a directory\n", str);
+      return -2;
+  }
+
+  fd = open(str, O_RDONLY);
+  // input is not a directory (probably a file), return its file descriptor
+  printf("Found %s is a file; its fd is %d\n", str, fd);
+  return fd;
+}
+
+/* processes an already-opened file into the linked list, given its file descriptor */
+int processFile(int fd) {
+  
+  printf("File processed!\n");
+  return 0;
+}
+
+int processDir(char* dir_name) {
+
+    DIR* dir;
+    struct dirent *dp;
+    dir = opendir (dir_name);
+    if (dir == NULL) {
+      perror ("Caution! Directory %s could not be opened; continuing...");
+      return 0;
+    }
+
+    int dircision;
+    int i, new_dir_len, dir_name_len, d_name_len;
+
+    do {
+      dp = readdir(dir);
+      dircision = isDirectory(dp->d_name);
+
+      if (dircision == -1) {
+        // dp is invalid
+        printf("Caution! Requested input (file or directory found in %s) is not a valid file or directory. Continuing...\n", dir_name);
+        return 0;
+      }
+
+      if (dircision == -2) {
+        // dp is a directory
+
+        dir_name_len = len(dir_name); // length of the input path name (not including a trailing forward slash)
+        d_name_len = len(dp->d_name); // length of the new file's name (not including its whole path)
+        new_dir_len = dir_name_len + d_name_len + 1;
+        char* new_dir = (char*)malloc(sizeof(char) * new_dir_len);
+        new_dir[new_dir_len - 1] = '\0';
+
+        for (i = 0; i < new_dir_len; i++) {
+          if (i < dir_name_len) {
+            new_dir[i] = dir_name[i];
+          } else if (i == dir_name_len) {
+            new_dir[i] = '/';
+          } else if (i == new_dir_len - 1) {
+            new_dir[i] = '\0';
+          } else {
+            new_dir[i] = dp->d_name[i];
+          }
+        }
+      
+        printf("File path for %s from starting directory is %s\n", dp->d_name, new_dir);
+
+        processDir(new_dir);
+        free(new_dir);
+      } else if (dircision >= 0) {
+        // dp is probably a file
+        processFile(dircision);
+      } else {
+        // not good
+        printf("??????????????????????????\n");
+      }
+
+    } while (dp != NULL);
+
+  return 0;
+}
+
 /* main */
 int main(int argc, char** argv) {
 
-  /* check that the input has one and only one argument, else exit with error */
-  if (argc != 2) {
-    printf("Error! Program must be run with exactly one argument, but %d were found. Exiting...\n", argc);
+  /* check that the input has two and only two arguments, else exit with error */
+  if (argc != 3) {
+    printf("Error! Program must be run with exactly two arguments, but %d were found. Exiting...\n", argc - 1);
     exit(0);
   }
 
+  // effectively removes the trailing forward slash, if it exists in the input statement
+  if (argv[2][len(argv[2]) - 1] == '/') {
+    argv[2][len(argv[2]) - 1] = '\0';
+  }
+
+  printf("Output will be stored in an XML file with the following name: %s\n", argv[1]);
+  printf("Reading from input with the following name: %s\n", argv[2]);
+  
+  int fd = open(argv[2], O_RDONLY);
+  printf("fd returns as %d\n", fd);
+  printf("errno returns as %d\n", errno);  
+
+  // checks to see if input can be opened as a file or directory at all
+  if (fd == -1) {
+    // input is not a directory; exit on error
+    printf("Error! Requested input %s is not a valid file or directory. Exiting...\n", argv[2]);
+    exit(0);
+  }
+
+  fd = isDirectory(argv[2]);
+  printf("%d is fd\n", fd);
+  
+  // checks to see if input is a directory
+  if (fd == -2) {
+    // input is a directory, so treat it as one
+      printf("Reading %s as a directory...\n", argv[2]);
+      processDir(argv[2]);
+  } else if (fd == -1) {
+    // input is a forbidden value; exit on error
+      printf("Error reading %s as the command line argument! Forbidden name...\n", argv[2]);
+      exit(0);
+  } else if (fd >= 0) {
+    // input is not a directory, so treat it as a single file
+      printf("Reading %s as a file...\n", argv[2]);
+      processFile(fd);
+  } else {
+    // somehow this was reached, and that means there is a bad error in isDirectory
+      printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+      exit(0);
+  }
+ 
   return 0;
 }
 
 
 /* things TODO:
-
+  
 [ ] make file reader that creates a buffer and tokenizes each word, converting each character to lowercase
 
 [ ] make sure that each input to insert() is a proper string! (ends in '\0')
@@ -227,5 +369,28 @@ int main(int argc, char** argv) {
 [ ] feed each token to insertBig()
 
 [ ] sort each little list by its occurrence number at the end of the program
+
+[ ] in processFile, make sure the file is of a legal type to be processed
+
+[ ] in processDir, ignore .git and .DS_store and . and ..
+
+[ ] process list into XML format
+
+
+   types of input to account for:
+
+[ ] file only
+
+[ ] directory only
+
+[ ] directory leading to file
+
+[ ] directory leading to another directory
+
+[ ] directory leading to another directory leading to a file
+
+[ ] invalid input types
+
+[ ] a file or directory that the user does not have permission to access (?)
 
 */

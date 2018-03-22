@@ -6,6 +6,9 @@
 #include <sys/types.h> //TODO see if this is necessary
 #include <dirent.h>
 #include <errno.h>
+#include <ctype.h>
+
+int printList();
 
 /*
  * invertedIndex.c
@@ -35,7 +38,7 @@ BigNode *big_head = NULL;
 
 /* function to insert a new node into the 2D list at the correct spot; CAUTION: the input parameter must be a proper string (i.e. ending in '\0')! */
 int insert(char* s, char* f) {
-
+  printf("Attempting to insert %s from file %s\n", s, f);
   /* if the head is NULL, then the linked list is empty so this inserts a node at the head */
   if (big_head == NULL) {
     BigNode* new_big = (BigNode*) malloc(sizeof(BigNode));
@@ -84,7 +87,7 @@ int insert(char* s, char* f) {
   }
 
   /* the word does not exist yet, so makes a new node for it */
-  
+
   BigNode* new_big = (BigNode*) malloc(sizeof(BigNode));
   new_big->word = s;
   LittleNode* new_little = (LittleNode*) malloc(sizeof(LittleNode));
@@ -99,11 +102,11 @@ int insert(char* s, char* f) {
 
   /* while loop to go to the end of the linked list in the new node is greater than all of the nodes*/
   while (tmp1 != NULL) {
-//    printf("comparing %s and %s\n", new_node->str, tmp1->str);
+    printf("comparing %s and %s\n", new_big->word, tmp1->word);
 
     /* case where new_node's string is less than tmp1's string in terms of alphabetic precedence */
     if (strcmp(new_big->word, tmp1->word) <= 0) {
-//      printf("%s is less than %s\n", new_node->str, tmp1->str);
+      printf("%s is less than %s\n", new_big->word, tmp1->word);
       new_big->next = tmp1;
 
       /* case that the node should be inserted to the front of the list */
@@ -145,7 +148,7 @@ int printList() {
 
   /* loop to iterate through the big list */
   while (tmp1 != NULL) {
-    printf("%s\n", tmp1->word);
+    printf("%s %d\n", tmp1->word, big_head->little_head->count);
     LittleNode* tmp2 = big_head->little_head;
     /* loop to iterate through the little list */
     while (tmp2 != NULL) {
@@ -186,15 +189,18 @@ int freeList() {
   return 0;
 }
 
-/* function to find whether or not a given character is alphabetic */
-int isAlphabetic(char c) {
+/* function to find whether or not a given character is alphabetic (returns 1), a number (returns 2), or not valid (returns 0) */
+int isAlphanumeric(char c) {
 
   /* checks to see if the character is alphabetic (both upper and lowercases) */
   if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
     return 1;
   }
+  else if (c >= '0' && c <= '9') {
+    return 2;
+  }
 
-  //  c is non-alphabetic
+  //  c is non-alphanumeric
   return 0;
 }
 
@@ -236,7 +242,7 @@ int isDirectory(char* str) {
     return -1;
   }
 */
-  
+
   // opens the string in directory-only mode
   int fd = open(str, O_DIRECTORY);
   // checks to see if input is a directory
@@ -253,9 +259,77 @@ int isDirectory(char* str) {
 }
 
 /* processes an already-opened file into the linked list, given its file descriptor */
-int processFile(int fd) {
-  
-  printf("File with descriptor %d processed!\n", fd);
+int processFile(int fd, char * file_name) {
+  printf("File: %s passed in with descriptor %d\n", file_name, fd);
+  char * buffer = (char *) calloc(101, sizeof(char)); //buffer that will hold 100 characters at a time. allocated 101 because of 1 extra character for the null terminator
+  printf("String to be tokenized: %s\n", buffer);
+  int buf_length = 100; //length of the string from the buffer
+  int i = 0; //this will be used to traverse the string from the buffer
+  int j = 0; //this will be used to traverse the string for each token
+  printf("The name of the file is: %s\n", file_name);
+  int start = 0; //integer to tell whether we are starting a new token. 0 if false, 1 if true.
+  int tokenized = 0; //integer to tell whether a string has been successfully tokenized. 0 if false, 1 if true.
+  int incomplete = 0; //integer to tell if a token was cut off due to the limited size of the bugger. 0 if false, 1 if true
+  char * partial_str = (char*) malloc (2*(buf_length - i + 1) * sizeof(char));
+  int bytesread = 0; //number of bytes that read has read (corner case for the end of the file)
+
+  while ((bytesread = read(fd, buffer, 100)) != 0) {
+    printf("The string to be tokenized: %s\n", buffer);
+    //  scan through the big string and construct the linked list
+    for (i = 0; i < buf_length && i < bytesread - 1; i++) {
+      char * token = (char*) malloc ((buf_length - i + 1) * sizeof(char)); // this weird allocation was made to account for the biggest possible length of the substring at this point in the program, since we don't know how long each substring is beforehand
+      tokenized = 0; //reset tokenized to 0 because we are creating the next token
+      j = 0; //reset j to 0 so that the new token starts at index 0 rather than i
+      start = 1; //we are starting a new token so set start to 1
+      if (incomplete == 1) {
+        while (isAlphanumeric(buffer[i]) && i < buf_length) {
+          token[j] = tolower(buffer[i]);
+          i++;
+          j++;
+        }
+        token[j] = '\0';
+        printf("%s\n", partial_str);
+        strcat(partial_str, token);
+        printf("incomplete completed %s\n", partial_str);
+        incomplete = 0;
+        tokenized = 1;
+      }
+      /* loop that eliminates any leading digits */
+      else if (incomplete == 0) {
+        while (isAlphanumeric(buffer[i]) == 2 && start == 1 && i < buf_length) {
+          i++;
+        }
+
+        /* once we finish removing all the leading numbers lets get the actual token */
+        if (isAlphanumeric(buffer[i]) == 1) {
+          start = 0;
+        }
+
+        /* checks that each character in the string is alphabetic. if a character is not alphabetic, then it is a separator */
+        while (isAlphanumeric(buffer[i]) && start == 0 && i < buf_length) {
+          token[j] = tolower(buffer[i]);
+    //      printf("big_str[%d] is %c, str[%d] is %c\n", i, big_str[i], j, str[j]);
+          i++;
+          j++;
+          tokenized = 1;
+        }
+      }
+
+      /* if enough memory was alloted for the string then we can insert it into the linked list */
+      if (tokenized == 1) {
+        token[j] = '\0';
+        insert(token, file_name);
+        printf("insert complete. printing current list...\n");
+      }
+      if (i == buf_length && (isAlphanumeric(buffer[buf_length - 1]) == 1 || isAlphanumeric(buffer[buf_length - 1]) == 2)) {
+        strcpy(partial_str, token);
+        printf("partial %s\n", partial_str);
+        incomplete = 1;
+      }
+
+    }
+  }
+  printList();
   return 0;
 }
 
@@ -316,14 +390,14 @@ int processDir(char* dir_name) {
 
       if (isValid(dp->d_name) && dircision == -2) {
         // dp is a directory
-      
+
         printf("File path for %s from starting directory is %s\n", dp->d_name, new_dir);
 
         processDir(new_dir);
         free(new_dir);
       } else if (dircision >= 0) {
         // dp is probably a file
-        processFile(dircision);
+        processFile(dircision, dp->d_name);
       } else {
         // not good
         printf("??????????????????????????\n");
@@ -351,10 +425,10 @@ int main(int argc, char** argv) {
 
   printf("Output will be stored in an XML file with the following name: %s\n", argv[1]);
   printf("Reading from input with the following name: %s\n", argv[2]);
-  
+
   int fd = open(argv[2], O_RDONLY);
 //  printf("fd returns as %d\n", fd);
-//  printf("errno returns as %d\n", errno);  
+//  printf("errno returns as %d\n", errno);
 
   // checks to see if input can be opened as a file or directory at all
   if (fd == -1) {
@@ -372,7 +446,7 @@ int main(int argc, char** argv) {
       printf("Error reading %s as the command line argument! Forbidden name...\n", argv[2]);
       exit(0);
   }
-  
+
   // checks to see if input is a directory
   if (fd == -2) {
     // input is a directory, so treat it as one
@@ -380,20 +454,37 @@ int main(int argc, char** argv) {
       processDir(argv[2]);
   } else if (fd >= 0) {
     // input is not a directory, so treat it as a single file
-      printf("Reading %s as a file...\n", argv[2]);
-      processFile(fd);
+      char * file_name = (char *) malloc (sizeof(char) * 262);
+      int i = 0; //traverse argv[2]
+      int j = 0; //traverse the file_name
+      int length = 0; //length of the file name
+      int file_path_len = strlen(argv[2]);
+      for (i = file_path_len - 1; i >= 0; i--) {
+        if (argv[2][i] == '/') {
+          break;
+        }
+        length++;
+      }
+      printf("The length of the file is: %d\n", length);
+      for (i = file_path_len - length; i < file_path_len; i++) {
+        file_name[j] = argv[2][i];
+        j++;
+      }
+      file_name[j] = '\0';
+      printf("Reading %s as a file...\n", file_name);
+      processFile(fd, file_name);
   } else {
     // somehow this was reached, and that means there is a bad error in isDirectory
       printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
       exit(0);
   }
- 
+
   return 0;
 }
 
 
 /* things TODO:
-  
+
 [ ] make file reader that creates a buffer and tokenizes each word, converting each character to lowercase
 
 [ ] make sure that each input to insert() is a proper string! (ends in '\0')
@@ -408,6 +499,9 @@ int main(int argc, char** argv) {
 
 [ ] process list into XML format
 
+[ ] are file descriptors with values greater than 3 when you open normal?
+
+[ ] size of the buffer
 
    types of input to account for:
 

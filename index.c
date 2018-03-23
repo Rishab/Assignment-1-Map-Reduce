@@ -61,8 +61,10 @@ int insert(char* s, char* f) {
         LittleNode* tmp = tmp1->little_head; //searching pointer
         while (tmp->next != NULL) {
           if (strcmp(f, tmp->file_name) == 0) {
-            /* file does exist, so increment file count */
+            /* file does exist, so increment file's word count */
+            printf("current count for %s is %d\n", tmp1->word, tmp->count);
             tmp->count++;
+            printf("incremented. new count for %s is %d\n", tmp1->word, tmp->count);
             return 0;
           }
 
@@ -70,8 +72,10 @@ int insert(char* s, char* f) {
         }
 
         if (strcmp(f, tmp->file_name) == 0) {
-          /* file does exist, so increment file count */
+          /* file does exist, so increment file's word count; this is outside the loop because we want to maintain the pointer to the last file node in the list, so we cut the while loop off before the end */
+          printf("current count for %s is %d\n", tmp1->word, tmp->count);
           tmp->count++;
+          printf("incremented. new count for %s is %d\n", tmp1->word, tmp->count);
           return 0;
         }
 
@@ -148,8 +152,8 @@ int printList() {
 
   /* loop to iterate through the big list */
   while (tmp1 != NULL) {
-    printf("%s %d\n", tmp1->word, big_head->little_head->count);
-    LittleNode* tmp2 = big_head->little_head;
+    printf("%s\n", tmp1->word);
+    LittleNode* tmp2 = tmp1->little_head;
     /* loop to iterate through the little list */
     while (tmp2 != NULL) {
       printf("  %s: %d\n", tmp2->file_name, tmp2->count);
@@ -261,8 +265,8 @@ int isDirectory(char* str) {
 /* processes an already-opened file into the linked list, given its file descriptor */
 int processFile(int fd, char * file_name) {
   printf("File: %s passed in with descriptor %d\n", file_name, fd);
-  char * buffer = (char *) calloc(101, sizeof(char)); //buffer that will hold 100 characters at a time. allocated 101 because of 1 extra character for the null terminator
-  printf("String to be tokenized: %s\n", buffer);
+  char * buffer = (char *) calloc(101, sizeof(char)); //buffer that will hold 100 characters at a time. allocated 101 to allow 1 extra character for the null terminator
+  printf("Empty buffer: %s\n", buffer);
   int buf_length = 100; //length of the string from the buffer
   int i = 0; //this will be used to traverse the string from the buffer
   int j = 0; //this will be used to traverse the string for each token
@@ -276,6 +280,7 @@ int processFile(int fd, char * file_name) {
   /* loop to traverse through the entire file */
   while ((bytesread = read(fd, buffer, 100)) != 0) {
     printf("The string to be tokenized: %s\n", buffer);
+
     //  scan through the big string and construct the linked list
     for (i = 0; i < buf_length && i < bytesread - 1; i++) {
       char * token = (char*) malloc ((buf_length - i + 1) * sizeof(char)); // this weird allocation was made to account for the biggest possible length of the substring at this point in the program, since we don't know how long each substring is beforehand
@@ -285,7 +290,7 @@ int processFile(int fd, char * file_name) {
       if (incomplete == 1) {
         /*if the start of the next string to be tokenized has the rest of the partial string */
         if (isAlphanumeric(buffer[i]) == 1 || isAlphanumeric(buffer[i]) == 2) {
-          printf("The character at buffer of i is %c with index %d\n", buffer[i], i);
+          printf("The character at buffer[%d] is %c\n", i, buffer[i]);
           int temp = strlen(partial_str);
           printf("The length of the partial string is %d\n", temp);
           while (isAlphanumeric(buffer[i]) && i < buf_length) {
@@ -342,8 +347,13 @@ int processFile(int fd, char * file_name) {
         //printf("insert complete. printing current list...\n");
       }
 
+//      free(token);
     }
   }
+
+  free(buffer);
+  free(partial_str);
+
   printList();
   return 0;
 }
@@ -469,7 +479,8 @@ int main(int argc, char** argv) {
       processDir(argv[2]);
   } else if (fd >= 0) {
     // input is not a directory, so treat it as a single file
-      char * file_name = (char *) malloc (sizeof(char) * 262);
+
+      char * file_name = (char *) malloc (sizeof(char) * 263); //largest possible length of a file's name
       int i = 0; //traverse argv[2]
       int j = 0; //traverse the file_name
       int length = 0; //length of the file name
@@ -488,11 +499,14 @@ int main(int argc, char** argv) {
       file_name[j] = '\0';
       printf("Reading %s as a file...\n", file_name);
       processFile(fd, file_name);
+      free(file_name);
   } else {
     // somehow this was reached, and that means there is a bad error in isDirectory
       printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
       exit(0);
   }
+
+//  freeList();
 
   return 0;
 }
@@ -500,37 +514,34 @@ int main(int argc, char** argv) {
 
 /* things TODO:
 
-[ ] make file reader that creates a buffer and tokenizes each word, converting each character to lowercase
+[X] make file reader that creates a buffer and tokenizes each word, converting each character to lowercase
 
 [ ] make sure that each input to insert() is a proper string! (ends in '\0')
 
-[ ] feed each token to insertBig()
-
 [ ] sort each little list by its occurrence number at the end of the program
 
-[ ] in processFile, make sure the file is of a legal type to be processed
+[X] in processDir, ignore .git and .DS_store and . and ..
 
-[ ] in processDir, ignore .git and .DS_store and . and ..
+[ ] free everything that was malloc'd in processFile()
 
 [ ] process list into XML format
 
-[ ] are file descriptors with values greater than 3 when you open normal?
+[ ] add to big list in correct order (not from strcmp)
 
-[ ] size of the buffer
 
    types of input to account for:
 
-[ ] file only
+[X] file only
 
-[ ] directory only
+[X] directory only
 
-[ ] directory leading to file
+[X] directory leading to file
 
-[ ] directory leading to another directory
+[X] directory leading to another directory
 
-[ ] directory leading to another directory leading to a file
+[X] directory leading to another directory leading to a file
 
-[ ] invalid input types
+[X] invalid input types
 
 [ ] a file or directory that the user does not have permission to access (?)
 

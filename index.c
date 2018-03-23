@@ -316,6 +316,7 @@ int isDirectory(char* str) {
 }
 
 /* processes an already-opened file into the linked list, given its file descriptor */
+/* processes an already-opened file into the linked list, given its file descriptor */
 int processFile(int fd, char * file_name) {
   printf("File: %s passed in with descriptor %d\n", file_name, fd);
   char * buffer = (char *) calloc(101, sizeof(char)); //buffer that will hold 100 characters at a time. allocated 101 to allow 1 extra character for the null terminator
@@ -326,46 +327,19 @@ int processFile(int fd, char * file_name) {
   printf("The name of the file is: %s\n", file_name);
   int start = 0; //integer to tell whether we are starting a new token. 0 if false, 1 if true.
   int tokenized = 0; //integer to tell whether a string has been successfully tokenized. 0 if false, 1 if true.
-  int incomplete = 0; //integer to tell if a token was cut off due to the limited size of the bugger. 0 if false, 1 if true
-  char * partial_str = (char*) malloc (2*(buf_length - i + 1) * sizeof(char));
   int bytesread = 0; //number of bytes that read has read (corner case for the end of the file)
 
   /* loop to traverse through the entire file */
   while ((bytesread = read(fd, buffer, 100)) != 0) {
-    printf("The string to be tokenized: %s\n", buffer);
-
     //  scan through the big string and construct the linked list
-    for (i = 0; i < buf_length && i < bytesread - 1; i++) {
+    for (i = 0; i < buf_length && i < bytesread; i++) {
+      //printf("Current value of i is %d and character at this index is %c\n", i, buffer[i]);
       char * token = (char*) malloc ((buf_length - i + 1) * sizeof(char)); // this weird allocation was made to account for the biggest possible length of the substring at this point in the program, since we don't know how long each substring is beforehand
       tokenized = 0; //reset tokenized to 0 because we are creating the next token
       j = 0; //reset j to 0 so that the new token starts at index 0 rather than i
       start = 1; //we are starting a new token so set start to 1
-      if (incomplete == 1) {
-        /*if the start of the next string to be tokenized has the rest of the partial string */
-        if (isAlphanumeric(buffer[i]) == 1 || isAlphanumeric(buffer[i]) == 2) {
-          printf("The character at buffer[%d] is %c\n", i, buffer[i]);
-          int temp = strlen(partial_str);
-          printf("The length of the partial string is %d\n", temp);
-          while (isAlphanumeric(buffer[i]) && i < buf_length) {
-            partial_str[temp] = tolower(buffer[i]);
-            i++;
-            temp++;
-          }
-          partial_str[temp] = '\0';
-          printf("Incomplete completed successully. String is %s\n", partial_str);
-          incomplete = 0;
-          tokenized = 0;
-          insert(partial_str, file_name);
-        }
-        /* if the first character was a delimiter */
-        else if (isAlphanumeric(buffer[i]) == 0) {
-          printf("The first character of the buffer was a delimiter\n");
-          insert(partial_str, file_name);
-          incomplete = 0;
-        }
-      }
-
-      /* loop that eliminates any leading digits */
+      
+/* loop that eliminates any leading digits */
       while (isAlphanumeric(buffer[i]) == 2 && start == 1 && i < buf_length) {
         i++;
       }
@@ -382,16 +356,33 @@ int processFile(int fd, char * file_name) {
         tokenized = 1;
       }
       /*check to see that we are at the end of the string. if so, then copy the current token*/
-      if (i == buf_length && (isAlphanumeric(buffer[buf_length - 1]) == 1 || isAlphanumeric(buffer[buf_length - 1]) == 2)) {
+      if (i == bytesread && (isAlphanumeric(buffer[bytesread - 1]) == 1 || isAlphanumeric(buffer[bytesread - 1]) == 2)) {
+        char * partial_str = malloc (200*sizeof(char));
         int k = 0;
         token[j] = '\0';
         printf("Token to be partial: %s\n", token);
+        
         for (k = 0; k < strlen(token); k++) {
           partial_str[k] = token[k];
         }
+	bytesread = read(fd, buffer, 100);
+        i = 0;
+        printf("The string to be tokenized is %s\n", buffer);
+        while ((isAlphanumeric(buffer[i]) == 1 || isAlphanumeric(buffer[i] == 2)) && i < buf_length) {
+          i++;
+        }
+        printf("The new starting index of the buffer is %d\n", i);
+        int l;
+	for (l = 0; l < i; l++) {
+          printf("%c\n", buffer[l]);
+          partial_str[k] = buffer[l];
+          k++;
+        }
         partial_str[k] = '\0';
         printf("partial %s\n", partial_str);
-        incomplete = 1;
+        insert(partial_str, file_name);
+        //free(partial_str);
+        continue;
       }
       /* if enough memory was alloted for the string then we can insert it into the linked list */
       else if (tokenized == 1) {
@@ -400,16 +391,13 @@ int processFile(int fd, char * file_name) {
         //printf("insert complete. printing current list...\n");
       }
 
-//      free(token);
+      
     }
   }
-
-//  free(buffer);
-//  free(partial_str);
-
+  printf("List printed inside of processFile:\n");
   printList();
-
-  close(fd);
+  free(buffer);
+//  free(partial_str);
   return 0;
 }
 

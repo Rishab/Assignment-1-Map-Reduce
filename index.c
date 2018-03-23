@@ -102,11 +102,11 @@ int insert(char* s, char* f) {
 
   /* while loop to go to the end of the linked list in the new node is greater than all of the nodes*/
   while (tmp1 != NULL) {
-    printf("comparing %s and %s\n", new_big->word, tmp1->word);
+    //printf("comparing %s and %s\n", new_big->word, tmp1->word);
 
     /* case where new_node's string is less than tmp1's string in terms of alphabetic precedence */
     if (strcmp(new_big->word, tmp1->word) <= 0) {
-      printf("%s is less than %s\n", new_big->word, tmp1->word);
+      //printf("%s is less than %s\n", new_big->word, tmp1->word);
       new_big->next = tmp1;
 
       /* case that the node should be inserted to the front of the list */
@@ -273,6 +273,7 @@ int processFile(int fd, char * file_name) {
   char * partial_str = (char*) malloc (2*(buf_length - i + 1) * sizeof(char));
   int bytesread = 0; //number of bytes that read has read (corner case for the end of the file)
 
+  /* loop to traverse through the entire file */
   while ((bytesread = read(fd, buffer, 100)) != 0) {
     printf("The string to be tokenized: %s\n", buffer);
     //  scan through the big string and construct the linked list
@@ -282,49 +283,63 @@ int processFile(int fd, char * file_name) {
       j = 0; //reset j to 0 so that the new token starts at index 0 rather than i
       start = 1; //we are starting a new token so set start to 1
       if (incomplete == 1) {
-        while (isAlphanumeric(buffer[i]) && i < buf_length) {
-          token[j] = tolower(buffer[i]);
-          i++;
-          j++;
+        /*if the start of the next string to be tokenized has the rest of the partial string */
+        if (isAlphanumeric(buffer[i]) == 1 || isAlphanumeric(buffer[i]) == 2) {
+          printf("The character at buffer of i is %c with index %d\n", buffer[i], i);
+          int temp = strlen(partial_str);
+          printf("The length of the partial string is %d\n", temp);
+          while (isAlphanumeric(buffer[i]) && i < buf_length) {
+            partial_str[temp] = tolower(buffer[i]);
+            i++;
+            temp++;
+          }
+          partial_str[temp] = '\0';
+          printf("Incomplete completed successully. String is %s\n", partial_str);
+          incomplete = 0;
+          tokenized = 0;
+          insert(partial_str, file_name);
         }
-        token[j] = '\0';
-        printf("%s\n", partial_str);
-        strcat(partial_str, token);
-        printf("incomplete completed %s\n", partial_str);
-        incomplete = 0;
+        /* if the first character was a delimiter */
+        else if (isAlphanumeric(buffer[i]) == 0) {
+          printf("The first character of the buffer was a delimiter\n");
+          insert(partial_str, file_name);
+          incomplete = 0;
+        }
+      }
+
+      /* loop that eliminates any leading digits */
+      while (isAlphanumeric(buffer[i]) == 2 && start == 1 && i < buf_length) {
+        i++;
+      }
+      /* once we finish removing all the leading numbers lets get the actual token */
+      if (isAlphanumeric(buffer[i]) == 1) {
+        start = 0;
+      }
+      /* checks that each character in the string is alphabetic. if a character is not alphabetic, then it is a delimiter */
+      while (isAlphanumeric(buffer[i]) && start == 0 && i < buf_length) {
+        token[j] = tolower(buffer[i]);
+  //      printf("big_str[%d] is %c, str[%d] is %c\n", i, big_str[i], j, str[j]);
+        i++;
+        j++;
         tokenized = 1;
       }
-      /* loop that eliminates any leading digits */
-      else if (incomplete == 0) {
-        while (isAlphanumeric(buffer[i]) == 2 && start == 1 && i < buf_length) {
-          i++;
-        }
-
-        /* once we finish removing all the leading numbers lets get the actual token */
-        if (isAlphanumeric(buffer[i]) == 1) {
-          start = 0;
-        }
-
-        /* checks that each character in the string is alphabetic. if a character is not alphabetic, then it is a separator */
-        while (isAlphanumeric(buffer[i]) && start == 0 && i < buf_length) {
-          token[j] = tolower(buffer[i]);
-    //      printf("big_str[%d] is %c, str[%d] is %c\n", i, big_str[i], j, str[j]);
-          i++;
-          j++;
-          tokenized = 1;
-        }
-      }
-
-      /* if enough memory was alloted for the string then we can insert it into the linked list */
-      if (tokenized == 1) {
-        token[j] = '\0';
-        insert(token, file_name);
-        printf("insert complete. printing current list...\n");
-      }
+      /*check to see that we are at the end of the string. if so, then copy the current token*/
       if (i == buf_length && (isAlphanumeric(buffer[buf_length - 1]) == 1 || isAlphanumeric(buffer[buf_length - 1]) == 2)) {
-        strcpy(partial_str, token);
+        int k = 0;
+        token[j] = '\0';
+        printf("Token to be partial: %s\n", token);
+        for (k = 0; k < strlen(token); k++) {
+          partial_str[k] = token[k];
+        }
+        partial_str[k] = '\0';
         printf("partial %s\n", partial_str);
         incomplete = 1;
+      }
+      /* if enough memory was alloted for the string then we can insert it into the linked list */
+      else if (tokenized == 1) {
+        token[j] = '\0';
+        insert(token, file_name);
+        //printf("insert complete. printing current list...\n");
       }
 
     }

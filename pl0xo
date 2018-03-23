@@ -1,0 +1,21 @@
+
+<fileIndex>
+	<word text="a">
+		<file name="t.txt">2</file>
+	</word>
+	<word text="is">
+		<file name="t.txt">1</file>
+	</word>
+	<word text="simple">
+		<file name="t.txt">2</file>
+	</word>
+	<word text="test">
+		<file name="t.txt">3</file>
+	</word>
+	<word text="this">
+		<file name="t.txt">1</file>
+	</word>
+	<word text="very">
+		<file name="t.txt">1</file>
+	</word>
+</fileIndex>

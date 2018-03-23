@@ -8,8 +8,6 @@
 #include <errno.h>
 #include <ctype.h>
 
-int printList();
-
 /*
  * invertedIndex.c
  * by Jason Scot (Section 03) and Rishab Chawla (Section 02)
@@ -145,54 +143,6 @@ int insert(char* s, char* f) {
   return 0;
 }
 
-/* diagnostic function to write the list to standard output with each string starting a new line */
-int printList() {
-  /* pointer to beginning of the list */
-  BigNode* tmp1 = big_head;
-
-  /* loop to iterate through the big list */
-  while (tmp1 != NULL) {
-    printf("%s\n", tmp1->word);
-    LittleNode* tmp2 = tmp1->little_head;
-    /* loop to iterate through the little list */
-    while (tmp2 != NULL) {
-      printf("  %s: %d\n", tmp2->file_name, tmp2->count);
-      tmp2 = tmp2->next;
-    }
-
-    tmp1 = tmp1->next;
-  }
-  return 0;
-}
-
-/* function to free the list so that the program can be run multiple times without
-without any memory leaks */
-int freeList() {
-  /* pointers used to free the list */
-  BigNode* tmp0; //leading pointer
-  BigNode* tmp1 = big_head; //trailing pointer
-
-  /* Loop to iterate through the list. It frees the current node's fields (including the list it points to), then moves to the next node, and so on */
-  while (tmp1 != NULL){
-    tmp0 = tmp1->next;
-
-    LittleNode* tmp2; //leading pointer
-    LittleNode* tmp3 = tmp1->little_head; //trailing pointer
-    while (tmp3 != NULL){
-      tmp2 = tmp3->next;
-      free(tmp3->file_name);
-      free(tmp3);
-      tmp3 = tmp2;
-    }
-
-    free(tmp1->word);
-    //TODO: decide if we also have to free tmp1->little_head here, or if that was taken care of already
-    free(tmp1);
-    tmp1 = tmp0;
-  }
-  return 0;
-}
-
 /* function to find whether or not a given character is alphabetic (returns 1), a number (returns 2), or not valid (returns 0) */
 int isAlphanumeric(char c) {
 
@@ -217,6 +167,109 @@ int len(char* str) {
   }
 
   return l;
+}
+
+/* function to allocate a string composed of the digits of the given int and return a pointer to that string */
+char* int2str(int x) {
+  int digits = 1;
+  while (x > 9) {
+      x /= 10;
+      digits++;
+  }
+  
+  char* str = (char*)malloc(digits * sizeof(char) + 1);
+  snprintf(str, 10, "%d", x);
+
+  return str;
+}
+
+/* diagnostic function to write the list to standard output with each string starting a new line */
+int printList() {
+  /* pointer to beginning of the list */
+  BigNode* tmp1 = big_head;
+
+  /* loop to iterate through the big list */
+  while (tmp1 != NULL) {
+    printf("%s\n", tmp1->word);
+    LittleNode* tmp2 = tmp1->little_head;
+    /* loop to iterate through the little list */
+    while (tmp2 != NULL) {
+      printf("  %s: %d\n", tmp2->file_name, tmp2->count);
+      tmp2 = tmp2->next;
+    }
+
+    tmp1 = tmp1->next;
+  }
+  return 0;
+}
+
+/* function to output the conents of the list into an XML-formatted document named as the input */
+int outputList(char* filename) {
+
+  int outputFile = open(filename, O_RDWR|O_CREAT, 777);
+//  int outputFile = open(filename, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+  
+
+  write(outputFile, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<fileIndex>\n", 51);
+
+  /* pointer to beginning of the list */
+  BigNode* tmp1 = big_head;
+
+  /* loop to iterate through the big list */
+  while (tmp1 != NULL) {
+    write(outputFile, "\t<word text=\"", 13);
+//    printf("%s\n", tmp1->word);
+    write(outputFile, tmp1->word, len(tmp1->word));
+    write(outputFile, "\">\n", 3);
+
+    LittleNode* tmp2 = tmp1->little_head;
+    /* loop to iterate through the little list */
+    while (tmp2 != NULL) {
+      write(outputFile, "\t\t<file name=\"", 14);
+      write(outputFile, tmp2->file_name, len(tmp2->file_name));
+      write(outputFile, "\">", 2);
+
+      char* counteger = int2str(tmp2->count);
+      write(outputFile, counteger, len(counteger));
+      free(counteger);
+
+      write(outputFile, "</file>\n", 8);
+      tmp2 = tmp2->next;
+    }
+
+    write(outputFile, "\t</word>\n", 9);
+    tmp1 = tmp1->next;
+  }
+
+  write(outputFile, "</fileIndex>", 12);
+  return 0;
+}
+
+/* function to free the list so that the program can be run multiple times without
+without any memory leaks */
+int freeList() {
+  /* pointers used to free the list */
+  BigNode* tmp0; //leading pointer
+  BigNode* tmp1 = big_head; //trailing pointer
+
+  /* Loop to iterate through the list. It frees the current node's fields (including the list it points to), then moves to the next node, and so on */
+  while (tmp1 != NULL){
+    tmp0 = tmp1->next;
+
+    LittleNode* tmp2; //leading pointer
+    LittleNode* tmp3 = tmp1->little_head; //trailing pointer
+    while (tmp3 != NULL){
+      tmp2 = tmp3->next;
+//      free(tmp3->file_name); //TODO make sure this is taken care of in other functions
+      free(tmp3);
+      tmp3 = tmp2;
+    }
+
+    free(tmp1->word);
+    free(tmp1);
+    tmp1 = tmp0;
+  }
+  return 0;
 }
 
 /* function to find if the input string has a forbidden name for a directory (i.e. do not try to open this) and if so, returns 0 */
@@ -351,10 +404,12 @@ int processFile(int fd, char * file_name) {
     }
   }
 
-  free(buffer);
-  free(partial_str);
+//  free(buffer);
+//  free(partial_str);
 
   printList();
+
+  close(fd);
   return 0;
 }
 
@@ -437,10 +492,32 @@ int processDir(char* dir_name) {
 int main(int argc, char** argv) {
   printf("\n");
 
-  /* check that the input has two and only two arguments, else exit with error */
+  /* checks that the input has two and only two arguments, else exit with error */
   if (argc != 3) {
     printf("Error! Program must be run with exactly two arguments, but %d were found. Exiting...\n", argc - 1);
     exit(0);
+  }
+
+  /* checks for a preexisting file of the specified name and gives the option to overwrite or leave it if so */
+  if (access(argv[1], F_OK) != -1 ) {
+    char ovr[256];
+    ovr[0] = '\n';
+ 
+    printf("A file named %s already exists. Enter \"c\" to continue or \"q\" to quit.\n", argv[1]);
+    scanf("%s", ovr);
+    
+    if (ovr[0] == 'q') {
+      printf("Not overwriting preexisting file.\n");
+      exit(0);
+    }
+
+    int rem;
+    rem = remove(argv[1]);
+
+    if (rem) {
+      printf("Error! Attempted to overwrite file %s but it could not be altered. Exiting...\n", argv[1]);
+      exit(0);
+    }
   }
 
   // effectively removes the trailing forward slash, if it exists in the input statement
@@ -472,6 +549,8 @@ int main(int argc, char** argv) {
       exit(0);
   }
 
+  int file_made = 0;
+
   // checks to see if input is a directory
   if (fd == -2) {
     // input is a directory, so treat it as one
@@ -481,6 +560,7 @@ int main(int argc, char** argv) {
     // input is not a directory, so treat it as a single file
 
       char * file_name = (char *) malloc (sizeof(char) * 263); //largest possible length of a file's name
+      file_made = 1;
       int i = 0; //traverse argv[2]
       int j = 0; //traverse the file_name
       int length = 0; //length of the file name
@@ -499,14 +579,19 @@ int main(int argc, char** argv) {
       file_name[j] = '\0';
       printf("Reading %s as a file...\n", file_name);
       processFile(fd, file_name);
-      free(file_name);
   } else {
     // somehow this was reached, and that means there is a bad error in isDirectory
       printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
       exit(0);
   }
 
-//  freeList();
+  outputList(argv[1]);
+
+  if (file_made) {
+//    free(file_name); TODO figure out how to free this somewhere
+  }
+
+  freeList();
 
   return 0;
 }
@@ -544,5 +629,7 @@ int main(int argc, char** argv) {
 [X] invalid input types
 
 [ ] a file or directory that the user does not have permission to access (?)
+
+[ ] names for output files that will result in invalid filenames
 
 */

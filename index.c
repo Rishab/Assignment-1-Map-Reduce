@@ -27,6 +27,7 @@ typedef struct _LittleNode {
 /* definition of nodes in the "big" (i.e. word-focused) linked list */
 typedef struct _BigNode {
   char* word;
+  int little_size; //the amount of nodes in the little list
   LittleNode* little_head;
   struct _BigNode* next;
 } BigNode;
@@ -41,6 +42,7 @@ int insert(char* s, char* f) {
   if (big_head == NULL) {
     BigNode* new_big = (BigNode*) malloc(sizeof(BigNode));
     new_big->word = s;
+    new_big->little_size = 1;
     LittleNode* new_little = (LittleNode*) malloc(sizeof(LittleNode));
     new_little->count = 1;
     new_little->file_name = f;
@@ -79,7 +81,8 @@ int insert(char* s, char* f) {
 
         /* file does not exist, so make a new file node for it */
         LittleNode* new_little = (LittleNode*) malloc(sizeof(LittleNode));
-        new_little->count = 1;
+        tmp1->little_size = 1;
+        new_little->count++;
         new_little->file_name = f;
         new_little->next = NULL;
         tmp->next = new_little;
@@ -92,6 +95,7 @@ int insert(char* s, char* f) {
 
   BigNode* new_big = (BigNode*) malloc(sizeof(BigNode));
   new_big->word = s;
+  new_big->little_size = 1;
   LittleNode* new_little = (LittleNode*) malloc(sizeof(LittleNode));
   new_little->count = 1;
   new_little->file_name = f;
@@ -245,6 +249,73 @@ int outputList(char* filename) {
   return 0;
 }
 
+/* function to sort the sub-lists (files/counts) in correct order for output */
+int sortCounts() {
+  /* pointer to beginning of the list */
+  BigNode* tmp1 = big_head;
+  int i, flag;
+  LittleNode* highest; //node with the biggest count
+
+  /* loop to iterate through the big list */
+  while (tmp1 != NULL) {
+
+    /* constructs a new list; this one will be sorted as it is constructed */
+    LittleNode* sorted = (LittleNode*)malloc(sizeof(LittleNode));
+    LittleNode* tmp4 = sorted;
+    for (i = 0; i < tmp1->little_size; i++) {
+      LittleNode* tmp5 = (LittleNode*)malloc(sizeof(LittleNode));
+      tmp4->next = tmp5;
+      tmp4 = tmp5;
+    }
+
+    tmp4 = sorted;
+
+    /* loops to iterate through the little lists and find the element(s) with the lowest count each time */
+    for (i = 0; i < tmp1->little_size; i++) {
+      flag = 0; //indicator of whether or not the highest value at the end of the sub-loop is repeated
+      LittleNode* tmp2 = tmp1->little_head;
+      highest = tmp2;
+      tmp2 = tmp2->next;
+
+      while (tmp2 != NULL) {
+        if (tmp2->count > highest->count) {
+          highest = tmp2;
+        }
+
+        if (tmp2->count == highest->count) {
+          flag = 1;
+        }
+
+        tmp2 = tmp2->next;
+      }
+
+      if (flag) {
+
+      } else {
+        tmp4->file_name = highest->file_name;
+        tmp4->count = highest->count;
+      }
+
+      tmp4 = tmp4->next;
+    }
+
+    /* free the old (unsorted) little list */
+    LittleNode* tmp2 = NULL; //leading pointer
+    LittleNode* tmp3 = tmp1->little_head; //trailing pointer
+    while (tmp3 != NULL){
+      tmp2 = tmp3->next;
+//      free(tmp3->file_name); //TODO make sure this is taken care of in other functions
+      free(tmp3);
+      tmp3 = tmp2;
+    }
+
+    /* point to the new (sorted) list's head */
+    tmp1->little_head = sorted;
+    tmp1 = tmp1->next;
+  }
+  return 0;
+}
+
 /* function to free the list so that the program can be run multiple times without
 without any memory leaks */
 int freeList() {
@@ -316,13 +387,19 @@ int isDirectory(char* str) {
 }
 
 /* processes an already-opened file into the linked list, given its file descriptor */
-/* processes an already-opened file into the linked list, given its file descriptor */
 int processFile(int fd, char * file_name) {
+  int i;
+  for  (i = 0; i < len(file_name); i++) {
+    if (isAlphanumeric(file_name[i])) {
+      file_name[i] = tolower(file_name[i]);
+    }
+  }
+
   printf("File: %s passed in with descriptor %d\n", file_name, fd);
   char * buffer = (char *) calloc(101, sizeof(char)); //buffer that will hold 100 characters at a time. allocated 101 to allow 1 extra character for the null terminator
   printf("Empty buffer: %s\n", buffer);
   int buf_length = 100; //length of the string from the buffer
-  int i = 0; //this will be used to traverse the string from the buffer
+  i = 0; //this will be used to traverse the string from the buffer
   int j = 0; //this will be used to traverse the string for each token
   printf("The name of the file is: %s\n", file_name);
   int start = 0; //integer to tell whether we are starting a new token. 0 if false, 1 if true.
@@ -572,6 +649,8 @@ int main(int argc, char** argv) {
       printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
       exit(0);
   }
+
+//  sortCounts();
 
   outputList(argv[1]);
 

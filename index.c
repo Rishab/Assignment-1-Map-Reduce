@@ -9,7 +9,7 @@
 #include <ctype.h>
 
 /*
- * invertedIndex.c
+ * index.c
  * by Jason Scot (Section 03) and Rishab Chawla (Section 02)
  * for Systems Programming with Prof. John-Austen Francisco
  * Rutgers University
@@ -35,7 +35,8 @@ typedef struct _BigNode {
 /* global declaration of head of the "big" list so it can be referenced later */
 BigNode *big_head = NULL;
 
-int mystrcmp(const char * a, const char * b) {
+/* custom, simpler strcmp method to compare two strings and place them in the order described for the assignment output. takes two strings, a and b, and returns 0 if they are exactly alike, 1 if b is "greater" (i.e. should come after a in order), or -1 if a is "greater". the usage char signifies whether the rules for sorting words ('w') or files (any other char) should apply */
+int mystrcmp(const char * a, const char * b, char usage) {
   printf("The strings to be compared are %s and %s\n", a, b);
   int len_a = strlen(a);
   int len_b = strlen(b);
@@ -51,21 +52,31 @@ int mystrcmp(const char * a, const char * b) {
       break;
     }
   }
-  if (i == len_a && j == len_b && i == j && len_a == len_b) {
+  if (i == len_a && j == len_b && len_a == len_b) {
+    // both strings are the same
     printf("1\n");
     return 0;
   }
   else if ((isalpha(a[i]) && isalpha(b[j])) || (isdigit(a[i]) && isdigit(b[j])))  {
     printf("2\n");
+    if (usage == 'w') {
+      return a[i] < b[j] ? -1: 1;
+    }
     return a[i] > b[j] ? -1: 1;
   } 
   else if (isdigit(a[i]) && isalpha(b[j])) {
     printf("3\n");
-    return 1;
+    if (usage == 'w') {
+      return 1;
+    }
+    return -1;
   }
   else if (isalpha(a[i]) && isdigit(b[j])) {
     printf("4\n");
-    return -1;
+    if (usage == 'w') {
+      return -1;
+    }
+    return 1;
   }
   else if (a[i] == '.') {
     printf("5\n");
@@ -100,12 +111,12 @@ int insert(char* s, char* f) {
   /* checks whether or not the word being insterted already exists in the big list */
   BigNode* tmp1 = big_head; //searching pointer
   while (tmp1 != NULL) {
-    if (mystrcmp(s, tmp1->word) == 0) {
+    if (mystrcmp(s, tmp1->word, 'w') == 0) {
         /* the word does exist already; see whether or not its file exists yet */
 //        printf("the word \"%s\" is already in the list. checking if the file exists too...\n", s);
         LittleNode* tmp = tmp1->little_head; //searching pointer
         while (tmp->next != NULL) {
-          if (mystrcmp(f, tmp->file_name) == 0) {
+          if (mystrcmp(f, tmp->file_name, 'f') == 0) {
             /* file does exist, so increment file's word count */
             printf("the word \"%s\" is already in file %s. increasing file's word count...\n", tmp1->word, tmp->file_name);
             printf("current count for %s is %d\n", tmp1->word, tmp->count);
@@ -117,7 +128,7 @@ int insert(char* s, char* f) {
           tmp = tmp->next;
         }
 
-        if (mystrcmp(f, tmp->file_name) == 0) {
+        if (mystrcmp(f, tmp->file_name, 'f') == 0) {
           /* file does exist, so increment file's word count; this is outside the loop because we want to maintain the pointer to the last file node in the list, so we cut the while loop off before the end */
           printf("the word \"%s\" is already in file %s. increasing file's word count...\n", tmp1->word, tmp->file_name);
           printf("current count for %s is %d\n", tmp1->word, tmp->count);
@@ -160,7 +171,7 @@ int insert(char* s, char* f) {
     //printf("comparing %s and %s\n", new_big->word, tmp1->word);
 
     /* case where new_node's string is less than tmp1's string in terms of alphabetic precedence */
-    if (mystrcmp(new_big->word, tmp1->word) <= 0) {
+    if (mystrcmp(new_big->word, tmp1->word, 'w') <= 0) {
       //printf("%s is less than %s\n", new_big->word, tmp1->word);
       new_big->next = tmp1;
 
@@ -300,12 +311,12 @@ int outputList(char* filename) {
   return 0;
 }
 
-/* function to compare the count of two file to see which one comes first */
+/* function to compare the count of two file names to see which one comes first */
 int count_sort(const void * x, const void * y) {
   LittleNode * xi = (LittleNode *) x; //the first node to compare
   LittleNode * yi = (LittleNode *) y; // the second node to compare
   if (xi->count == yi->count) {
-    return mystrcmp(xi->file_name, yi->file_name);
+    return mystrcmp(xi->file_name, yi->file_name, 'f');
   }
   return (int) (xi->count - yi->count);
 }
@@ -367,7 +378,7 @@ int freeList() {
 
 /* function to find if the input string has a forbidden name for a directory (i.e. do not try to open this) and if so, returns 0 */
 int isValid(char* str) {
-  if (mystrcmp(str, ".") == 0 || mystrcmp(str, "..") == 0 || mystrcmp(str, ".git") == 0 || mystrcmp(str, ".DS_store") == 0) {
+  if (mystrcmp(str, ".", 'w') == 0 || mystrcmp(str, "..", 'w') == 0 || mystrcmp(str, ".git", 'w') == 0 || mystrcmp(str, ".DS_store", 'w') == 0) {
     printf("Found %s to have an invalid name\n", str);
     return 0;
   }

@@ -1,35 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fileIndex>
-	<word text="a">
-		<file name="t.txt">3</file>
-		<file name="b">6</file>
+	<word text="example10">
+		<file name="aaa">2</file>
+		<file name="aaa.txt">2</file>
+		<file name="a0">2</file>
+		<file name="aa">1</file>
+		<file name="a.txt">1</file>
+		<file name="bb">1</file>
+		<file name="zz">1</file>
+		<file name=".astuff">1</file>
+		<file name=".zstuff">1</file>
 	</word>
-	<word text="aa">
-		<file name="t.txt">1</file>
-		<file name="b">2</file>
+	<word text="example2">
+		<file name="a">1</file>
+		<file name="aa">1</file>
+		<file name="aaa">1</file>
 	</word>
-	<word text="is">
-		<file name="t.txt">1</file>
-		<file name="b">2</file>
+	<word text="example3a">
+		<file name="aa">2</file>
+		<file name="a">1</file>
+		<file name="aaa">1</file>
 	</word>
-	<word text="simple">
-		<file name="t.txt">2</file>
-		<file name="b">4</file>
-	</word>
-	<word text="test">
-		<file name="t.txt">3</file>
-		<file name="b">6</file>
-	</word>
-	<word text="this">
-		<file name="t.txt">1</file>
-		<file name="b">2</file>
-	</word>
-	<word text="very">
-		<file name="t.txt">1</file>
-		<file name="b">2</file>
-	</word>
-	<word text="yup">
-		<file name="t.txt">1</file>
-		<file name="b">2</file>
+	<word text="example30">
+		<file name="aaa">1</file>
+		<file name="a.txt">1</file>
+		<file name="b">1</file>
+		<file name="1">1</file>
+		<file name=".1">1</file>
 	</word>
 </fileIndex>

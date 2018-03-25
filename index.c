@@ -300,13 +300,12 @@ int outputList(char* filename) {
   return 0;
 }
 
+/* function to compare the count of two file to see which one comes first */
 int count_sort(const void * x, const void * y) {
-  LittleNode * xi = (LittleNode *) x;
-  LittleNode * yi = (LittleNode *) y;
+  LittleNode * xi = (LittleNode *) x; //the first node to compare
+  LittleNode * yi = (LittleNode *) y; // the second node to compare
   if (xi->count == yi->count) {
-    int test = mystrcmp(xi->file_name, yi->file_name);
-    printf("My string compare returned %d\n", test);
-    return test;
+    return mystrcmp(xi->file_name, yi->file_name);
   }
   return (int) (xi->count - yi->count);
 }
@@ -315,18 +314,21 @@ int count_sort(const void * x, const void * y) {
 void sort_littlenodes() {
   //printf("Inside sorting method\n");
   BigNode * tmp1 = big_head;
+  /* loop to go through all the words in the big list */
   while (tmp1 != NULL) {
     LittleNode little_list [tmp1->little_size];
     LittleNode * tmp2 = tmp1->little_head;
     int i;
     int num_files = tmp1->little_size;
+   /* loop to initialize an array of structs with the same information as the current keyword's list */
     for (i = 0; i < num_files; i++) {
       little_list[i].file_name = tmp2->file_name;
       little_list[i].count = tmp2->count;
       tmp2 = tmp2->next;
     }
-    qsort(little_list, (size_t) num_files, sizeof(LittleNode), count_sort);
+    qsort(little_list, (size_t) num_files, sizeof(LittleNode), count_sort); //library qsort function that returns array sorted
     tmp2 = tmp1->little_head;
+    /* loop to traverse all elements in the array and reset it to the new sorted elements. qsort returned in ascending order and we need it in descending order */
     for (i = num_files - 1; i >= 0; i--) {
       tmp2->file_name = little_list[i].file_name;
       tmp2->count = little_list[i].count;
@@ -334,18 +336,6 @@ void sort_littlenodes() {
     }
     tmp1 = tmp1->next;
   }  
-  /*tmp1 = big_head;
-  while (tmp1 != NULL) {
-    int i;
-    int num_files = tmp1->little_size;
-    LittleNode * tmp2 = tmp1->little_head;
-    for (i = 0; i < num_files; i++) {
-      tmp2->file_name = little_list[i].file_name;
-      tmp2->count = little_list[i].count;
-      tmp2 = tmp2->next;
-    }
-    tmp1 = tmp1->next;
-  }*/
 }
 
 /* function to free the list so that the program can be run multiple times without

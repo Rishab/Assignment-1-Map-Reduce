@@ -58,10 +58,12 @@ int insert(char* s, char* f) {
   while (tmp1 != NULL) {
     if (strcmp(s, tmp1->word) == 0) {
         /* the word does exist already; see whether or not its file exists yet */
+//        printf("the word \"%s\" is already in the list. checking if the file exists too...\n", s);
         LittleNode* tmp = tmp1->little_head; //searching pointer
         while (tmp->next != NULL) {
           if (strcmp(f, tmp->file_name) == 0) {
             /* file does exist, so increment file's word count */
+            printf("the word \"%s\" is already in file %s. increasing file's word count...\n", tmp1->word, tmp->file_name);
             printf("current count for %s is %d\n", tmp1->word, tmp->count);
             tmp->count++;
             printf("incremented. new count for %s is %d\n", tmp1->word, tmp->count);
@@ -73,6 +75,7 @@ int insert(char* s, char* f) {
 
         if (strcmp(f, tmp->file_name) == 0) {
           /* file does exist, so increment file's word count; this is outside the loop because we want to maintain the pointer to the last file node in the list, so we cut the while loop off before the end */
+          printf("the word \"%s\" is already in file %s. increasing file's word count...\n", tmp1->word, tmp->file_name);
           printf("current count for %s is %d\n", tmp1->word, tmp->count);
           tmp->count++;
           printf("incremented. new count for %s is %d\n", tmp1->word, tmp->count);
@@ -80,12 +83,14 @@ int insert(char* s, char* f) {
         }
 
         /* file does not exist, so make a new file node for it */
+        printf("the word \"%s\" is not in a file yet, so making a new file for it called %s\n", tmp1->word, f);
         LittleNode* new_little = (LittleNode*) malloc(sizeof(LittleNode));
-        tmp1->little_size = 1;
+        tmp1->little_size++;
         new_little->count++;
         new_little->file_name = f;
         new_little->next = NULL;
         tmp->next = new_little;
+        return 0;
     }
 
     tmp1 = tmp1->next;
@@ -255,22 +260,14 @@ int sortCounts() {
   BigNode* tmp1 = big_head;
   int i, flag;
   LittleNode* highest; //node with the biggest count
+  LittleNode* sorted = (LittleNode*)malloc(sizeof(LittleNode));
+  LittleNode* tmp4 = sorted;
 
   /* loop to iterate through the big list */
   while (tmp1 != NULL) {
 
-    /* constructs a new list; this one will be sorted as it is constructed */
-    LittleNode* sorted = (LittleNode*)malloc(sizeof(LittleNode));
-    LittleNode* tmp4 = sorted;
-    for (i = 0; i < tmp1->little_size; i++) {
-      LittleNode* tmp5 = (LittleNode*)malloc(sizeof(LittleNode));
-      tmp4->next = tmp5;
-      tmp4 = tmp5;
-    }
-
-    tmp4 = sorted;
-
-    /* loops to iterate through the little lists and find the element(s) with the lowest count each time */
+    printf("size of the file list of %s is %d\n", tmp1->word, tmp1->little_size);
+    // loops to iterate through the little lists and find the element(s) with the lowest count each time 
     for (i = 0; i < tmp1->little_size; i++) {
       flag = 0; //indicator of whether or not the highest value at the end of the sub-loop is repeated
       LittleNode* tmp2 = tmp1->little_head;
@@ -283,23 +280,43 @@ int sortCounts() {
         }
 
         if (tmp2->count == highest->count) {
-          flag = 1;
+//          flag = 1;
         }
 
         tmp2 = tmp2->next;
       }
 
+      
+
       if (flag) {
+        if(i == 0) {
+          
+        } else {
+
+        }
 
       } else {
-        tmp4->file_name = highest->file_name;
-        tmp4->count = highest->count;
+          printf("found %s to have the highest count for %s\n", highest->file_name, tmp1->word);
+        if(i == 0) {
+          tmp4->file_name = highest->file_name;
+          tmp4->count = highest->count;
+        } else {
+          LittleNode* new_node = (LittleNode*)malloc(sizeof(LittleNode));
+          new_node->file_name = highest->file_name;
+          new_node->count = highest->count;
+          tmp4->next = new_node;
+          tmp4 = tmp4->next;
+        }
       }
+    }
 
+    tmp4 = sorted;
+    while (tmp4 != NULL) {
+      printf("%s: %d\n", tmp4->file_name, tmp4->count);
       tmp4 = tmp4->next;
     }
 
-    /* free the old (unsorted) little list */
+    // free the old (unsorted) little list
     LittleNode* tmp2 = NULL; //leading pointer
     LittleNode* tmp3 = tmp1->little_head; //trailing pointer
     while (tmp3 != NULL){
@@ -309,10 +326,12 @@ int sortCounts() {
       tmp3 = tmp2;
     }
 
-    /* point to the new (sorted) list's head */
+    // point to the new (sorted) list's head
     tmp1->little_head = sorted;
     tmp1 = tmp1->next;
   }
+
+  printf("finished sorting little lists\n");
   return 0;
 }
 
@@ -475,6 +494,7 @@ int processFile(int fd, char * file_name) {
   printList();
   free(buffer);
 //  free(partial_str);
+  close(fd);
   return 0;
 }
 
@@ -555,7 +575,7 @@ int processDir(char* dir_name) {
 
 /* main */
 int main(int argc, char** argv) {
-  printf("\n");
+  printf("\n\n\n");
 
   /* checks that the input has two and only two arguments, else exit with error */
   if (argc != 3) {
@@ -659,7 +679,6 @@ int main(int argc, char** argv) {
   }
 
   freeList();
-
   return 0;
 }
 

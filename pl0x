@@ -1,59 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fileIndex>
 	<word text="a">
-		<file name="b.txt">3</file>
-	</word>
-	<word text="a">
 		<file name="t.txt">3</file>
-		<file name="b.txt">1</file>
-	</word>
-	<word text="aa">
-		<file name="b.txt">1</file>
+		<file name="b">6</file>
 	</word>
 	<word text="aa">
 		<file name="t.txt">1</file>
-		<file name="b.txt">1</file>
-	</word>
-	<word text="is">
-		<file name="b.txt">1</file>
+		<file name="b">2</file>
 	</word>
 	<word text="is">
 		<file name="t.txt">1</file>
-		<file name="b.txt">1</file>
-	</word>
-	<word text="simple">
-		<file name="b.txt">2</file>
+		<file name="b">2</file>
 	</word>
 	<word text="simple">
 		<file name="t.txt">2</file>
-		<file name="b.txt">1</file>
-	</word>
-	<word text="test">
-		<file name="b.txt">3</file>
+		<file name="b">4</file>
 	</word>
 	<word text="test">
 		<file name="t.txt">3</file>
-		<file name="b.txt">1</file>
-	</word>
-	<word text="this">
-		<file name="b.txt">1</file>
+		<file name="b">6</file>
 	</word>
 	<word text="this">
 		<file name="t.txt">1</file>
-		<file name="b.txt">1</file>
-	</word>
-	<word text="very">
-		<file name="b.txt">1</file>
+		<file name="b">2</file>
 	</word>
 	<word text="very">
 		<file name="t.txt">1</file>
-		<file name="b.txt">1</file>
-	</word>
-	<word text="yup">
-		<file name="b.txt">1</file>
+		<file name="b">2</file>
 	</word>
 	<word text="yup">
 		<file name="t.txt">1</file>
-		<file name="b.txt">1</file>
+		<file name="b">2</file>
 	</word>
 </fileIndex>

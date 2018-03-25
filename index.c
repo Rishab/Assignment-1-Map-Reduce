@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/types.h> //TODO see if this is necessary
+#include <sys/types.h>
 #include <dirent.h>
 #include <errno.h>
 #include <ctype.h>
@@ -37,10 +37,10 @@ BigNode *big_head = NULL;
 
 /* custom, simpler strcmp method to compare two strings and place them in the order described for the assignment output. takes two strings, a and b, and returns 0 if they are exactly alike, 1 if b is "greater" (i.e. should come after a in order), or -1 if a is "greater". the usage char signifies whether the rules for sorting words ('w') or files (any other char) should apply */
 int mystrcmp(const char * a, const char * b, char usage) {
-  printf("The strings to be compared are %s and %s\n", a, b);
+//  printf("The strings to be compared are %s and %s\n", a, b);
   int len_a = strlen(a);
   int len_b = strlen(b);
-  printf("The length of a is %d and the length of b is %d\n", len_a, len_b);
+//  printf("The length of a is %d and the length of b is %d\n", len_a, len_b);
   int i = 0, j = 0;
   while (i < len_a && j < len_b) {
 
@@ -54,45 +54,38 @@ int mystrcmp(const char * a, const char * b, char usage) {
   }
   if (i == len_a && j == len_b && len_a == len_b) {
     // both strings are the same
-    printf("1\n");
     return 0;
   }
   else if ((isalpha(a[i]) && isalpha(b[j])) || (isdigit(a[i]) && isdigit(b[j])))  {
-    printf("2\n");
     if (usage == 'w') {
       return a[i] < b[j] ? -1: 1;
     }
     return a[i] > b[j] ? -1: 1;
   } 
   else if (isdigit(a[i]) && isalpha(b[j])) {
-    printf("3\n");
     if (usage == 'w') {
       return 1;
     }
     return -1;
   }
   else if (isalpha(a[i]) && isdigit(b[j])) {
-    printf("4\n");
     if (usage == 'w') {
       return -1;
     }
     return 1;
   }
   else if (a[i] == '.') {
-    printf("5\n");
     return -1;
   }
   else if (b[j] == '.') {
-    printf("6\n");
     return 1;
   }
-  printf("7\n");
   return 1;
 }
 
 /* function to insert a new node into the 2D list at the correct spot; CAUTION: the input parameter must be a proper string (i.e. ending in '\0')! */
 int insert(char* s, char* f) {
-  printf("Attempting to insert %s from file %s\n", s, f);
+//  printf("Attempting to insert %s from file %s\n", s, f);
   /* if the head is NULL, then the linked list is empty so this inserts a node at the head */
   if (big_head == NULL) {
     BigNode* new_big = (BigNode*) malloc(sizeof(BigNode));
@@ -118,10 +111,10 @@ int insert(char* s, char* f) {
         while (tmp->next != NULL) {
           if (mystrcmp(f, tmp->file_name, 'f') == 0) {
             /* file does exist, so increment file's word count */
-            printf("the word \"%s\" is already in file %s. increasing file's word count...\n", tmp1->word, tmp->file_name);
-            printf("current count for %s is %d\n", tmp1->word, tmp->count);
+//            printf("the word \"%s\" is already in file %s. increasing file's word count...\n", tmp1->word, tmp->file_name);
+//            printf("current count for %s is %d\n", tmp1->word, tmp->count);
             tmp->count++;
-            printf("incremented. new count for %s is %d\n", tmp1->word, tmp->count);
+//            printf("incremented. new count for %s is %d\n", tmp1->word, tmp->count);
             return 0;
           }
 
@@ -130,15 +123,15 @@ int insert(char* s, char* f) {
 
         if (mystrcmp(f, tmp->file_name, 'f') == 0) {
           /* file does exist, so increment file's word count; this is outside the loop because we want to maintain the pointer to the last file node in the list, so we cut the while loop off before the end */
-          printf("the word \"%s\" is already in file %s. increasing file's word count...\n", tmp1->word, tmp->file_name);
-          printf("current count for %s is %d\n", tmp1->word, tmp->count);
+//          printf("the word \"%s\" is already in file %s. increasing file's word count...\n", tmp1->word, tmp->file_name);
+//          printf("current count for %s is %d\n", tmp1->word, tmp->count);
           tmp->count++;
-          printf("incremented. new count for %s is %d\n", tmp1->word, tmp->count);
+//          printf("incremented. new count for %s is %d\n", tmp1->word, tmp->count);
           return 0;
         }
 
         /* file does not exist, so make a new file node for it */
-        printf("the word \"%s\" is not in a file yet, so making a new file for it called %s\n", tmp1->word, f);
+//        printf("the word \"%s\" is not in a file yet, so making a new file for it called %s\n", tmp1->word, f);
         LittleNode* new_little = (LittleNode*) malloc(sizeof(LittleNode));
         tmp1->little_size++;
         new_little->count++;
@@ -295,7 +288,7 @@ int outputList(char* filename) {
       write(outputFile, "\">", 2);
 
       char* counteger = int2str(tmp2->count);
-      printf("%s\n", counteger);
+//      printf("%s\n", counteger);
       write(outputFile, counteger, len(counteger));
       free(counteger);
 
@@ -364,7 +357,6 @@ int freeList() {
     LittleNode* tmp3 = tmp1->little_head; //trailing pointer
     while (tmp3 != NULL){
       tmp2 = tmp3->next;
-//      free(tmp3->file_name); //TODO make sure this is taken care of in other functions
       free(tmp3);
       tmp3 = tmp2;
     }
@@ -379,7 +371,7 @@ int freeList() {
 /* function to find if the input string has a forbidden name for a directory (i.e. do not try to open this) and if so, returns 0 */
 int isValid(char* str) {
   if (mystrcmp(str, ".", 'w') == 0 || mystrcmp(str, "..", 'w') == 0 || mystrcmp(str, ".git", 'w') == 0 || mystrcmp(str, ".DS_store", 'w') == 0) {
-    printf("Found %s to have an invalid name\n", str);
+//    printf("Caution! Found %s to have an invalid name\n", str);
     return 0;
   }
 
@@ -397,25 +389,18 @@ int isDirectory(char* str) {
 
 //  printf("Removed possible trailing forward slash; it has become %s\n", str);
 
-/* commented out becausse this is redundant TODO make sure this is actually unnecessary
-  // finds if the input string has a forbidden name (i.e. do not try to open this) and if so, returns -1
-  if (!isValid(str)) {
-    return -1;
-  }
-*/
-
   // opens the string in directory-only mode
   int fd = open(str, O_DIRECTORY);
   // checks to see if input is a directory
   if (fd != -1) {
     // input is a directory, so return 1
-      printf("Found %s is a directory\n", str);
+//      printf("Found %s is a directory\n", str);
       return -2;
   }
 
   fd = open(str, O_RDONLY);
   // input is not a directory (probably a file), return its file descriptor
-  printf("Found %s is a file; its fd is %d\n", str, fd);
+//  printf("Found %s is a file; its fd is %d\n", str, fd);
   return fd;
 }
 
@@ -428,13 +413,13 @@ int processFile(int fd, char * file_name) {
     }
   }
 
-  printf("File: %s passed in with descriptor %d\n", file_name, fd);
+//  printf("File: %s passed in with descriptor %d\n", file_name, fd);
   char * buffer = (char *) calloc(101, sizeof(char)); //buffer that will hold 100 characters at a time. allocated 101 to allow 1 extra character for the null terminator
-  printf("Empty buffer: %s\n", buffer);
+//  printf("Empty buffer: %s\n", buffer);
   int buf_length = 100; //length of the string from the buffer
   i = 0; //this will be used to traverse the string from the buffer
   int j = 0; //this will be used to traverse the string for each token
-  printf("The name of the file is: %s\n", file_name);
+//  printf("The name of the file is: %s\n", file_name);
   int start = 0; //integer to tell whether we are starting a new token. 0 if false, 1 if true.
   int tokenized = 0; //integer to tell whether a string has been successfully tokenized. 0 if false, 1 if true.
   int bytesread = 0; //number of bytes that read has read (corner case for the end of the file)
@@ -470,18 +455,18 @@ int processFile(int fd, char * file_name) {
         char * partial_str = malloc (200*sizeof(char));
         int k = 0;
         token[j] = '\0';
-        printf("Token to be partial: %s\n", token);
+//        printf("Token to be partial: %s\n", token);
         
         for (k = 0; k < strlen(token); k++) {
           partial_str[k] = token[k];
         }
 	bytesread = read(fd, buffer, 100);
         i = 0;
-        printf("The string to be tokenized is %s\n", buffer);
+//        printf("The string to be tokenized is %s\n", buffer);
         while ((isAlphanumeric(buffer[i]) == 1 || isAlphanumeric(buffer[i] == 2)) && i < buf_length) {
           i++;
         }
-        printf("The new starting index of the buffer is %d\n", i);
+//        printf("The new starting index of the buffer is %d\n", i);
         int l;
 	for (l = 0; l < i; l++) {
           printf("%c\n", buffer[l]);
@@ -504,8 +489,8 @@ int processFile(int fd, char * file_name) {
       
     }
   }
-  printf("List printed inside of processFile:\n");
-  printList();
+//  printf("List printed inside of processFile:\n");
+//  printList();
   free(buffer);
 //  free(partial_str);
   close(fd);
@@ -519,7 +504,7 @@ int processDir(char* dir_name) {
     struct dirent *dp;
     dir = opendir (dir_name);
     if (dir == NULL) {
-      perror ("Caution! Directory %s could not be opened; continuing...");
+//      perror ("Caution! Directory %s could not be opened; continuing...");
       return 0;
     }
 
@@ -531,11 +516,11 @@ int processDir(char* dir_name) {
 
       // check to see if the directory has been exhausted, and if so, returns from the method
       if (dp == NULL) {
-        printf("Directory %s processed!\n", dir_name);
+//        printf("Directory %s processed!\n", dir_name);
         return 0;
       }
 
-      printf("%s found in processDir\n", dp->d_name);
+//      printf("%s found in processDir\n", dp->d_name);
 
         dir_name_len = len(dir_name); // length of the input path name (not including a trailing forward slash)
         d_name_len = len(dp->d_name); // length of the new file's/directory's name (not including its whole path)
@@ -558,19 +543,19 @@ int processDir(char* dir_name) {
           }
         }
 
-      printf("Its full path is %s\n", new_dir);
+//      printf("Its full path is %s\n", new_dir);
       dircision = isDirectory(new_dir);
 
       if (!isValid(dp->d_name) && dircision < 0) {
         // dp is invalid
-        printf("Caution! Requested input %s is not a valid file or directory. Continuing...\n", new_dir);
+//        printf("Caution! Requested input %s is not a valid file or directory. Continuing...\n", new_dir);
         continue;
       }
 
       if (isValid(dp->d_name) && dircision == -2) {
         // dp is a directory
 
-        printf("File path for %s from starting directory is %s\n", dp->d_name, new_dir);
+//        printf("File path for %s from starting directory is %s\n", dp->d_name, new_dir);
 
         processDir(new_dir);
         free(new_dir);
@@ -579,7 +564,7 @@ int processDir(char* dir_name) {
         processFile(dircision, dp->d_name);
       } else {
         // not good
-        printf("??????????????????????????\n");
+//        printf("??????????????????????????\n");
       }
 
     } while (1);
@@ -587,9 +572,8 @@ int processDir(char* dir_name) {
   return 0;
 }
 
-/* main */
+/* main. reads in name for output and input files, then constructs the linked lists containing all the words from the file(s). then sorts and outputs them into a document of the specified name. */
 int main(int argc, char** argv) {
-  printf("\n\n\n");
 
   /* checks that the input has two and only two arguments, else exit with error */
   if (argc != 3) {
@@ -624,8 +608,8 @@ int main(int argc, char** argv) {
     argv[2][len(argv[2]) - 1] = '\0';
   }
 
-  printf("Output will be stored in an XML file with the following name: %s\n", argv[1]);
-  printf("Reading from input with the following name: %s\n", argv[2]);
+//  printf("Output will be stored in an XML file with the following name: %s\n", argv[1]);
+//  printf("Reading from input with the following name: %s\n", argv[2]);
 
   int fd = open(argv[2], O_RDONLY);
 //  printf("fd returns as %d\n", fd);
@@ -639,7 +623,7 @@ int main(int argc, char** argv) {
   }
 
   fd = isDirectory(argv[2]);
-  printf("%d is fd\n", fd);
+//  printf("%d is fd\n", fd);
 
   // checks to see if input is valid
   if (!isValid(argv[2])) {
@@ -648,18 +632,15 @@ int main(int argc, char** argv) {
       exit(0);
   }
 
-  int file_made = 0;
-
   // checks to see if input is a directory
   if (fd == -2) {
     // input is a directory, so treat it as one
-      printf("Reading %s as a directory...\n", argv[2]);
+//      printf("Reading %s as a directory...\n", argv[2]);
       processDir(argv[2]);
   } else if (fd >= 0) {
     // input is not a directory, so treat it as a single file
 
       char * file_name = (char *) malloc (sizeof(char) * 263); //largest possible length of a file's name
-      file_made = 1;
       int i = 0; //traverse argv[2]
       int j = 0; //traverse the file_name
       int length = 0; //length of the file name
@@ -670,17 +651,17 @@ int main(int argc, char** argv) {
         }
         length++;
       }
-      printf("The length of the file is: %d\n", length);
+//      printf("The length of the file is: %d\n", length);
       for (i = file_path_len - length; i < file_path_len; i++) {
         file_name[j] = argv[2][i];
         j++;
       }
       file_name[j] = '\0';
-      printf("Reading %s as a file...\n", file_name);
+//      printf("Reading %s as a file...\n", file_name);
       processFile(fd, file_name);
   } else {
     // somehow this was reached, and that means there is a bad error in isDirectory
-      printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+//      printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
       exit(0);
   }
 
@@ -689,48 +670,7 @@ int main(int argc, char** argv) {
 
   outputList(argv[1]);
 
-  if (file_made) {
-//    free(file_name); TODO figure out how to free this somewhere
-  }
-
+  printf("Output has been stored in an XML file with the following name: %s\n", argv[1]);
   freeList();
   return 0;
 }
-
-
-/* things TODO:
-
-[X] make file reader that creates a buffer and tokenizes each word, converting each character to lowercase
-
-[ ] make sure that each input to insert() is a proper string! (ends in '\0')
-
-[ ] sort each little list by its occurrence number at the end of the program
-
-[X] in processDir, ignore .git and .DS_store and . and ..
-
-[ ] free everything that was malloc'd in processFile()
-
-[ ] process list into XML format
-
-[ ] add to big list in correct order (not from strcmp)
-
-
-   types of input to account for:
-
-[X] file only
-
-[X] directory only
-
-[X] directory leading to file
-
-[X] directory leading to another directory
-
-[X] directory leading to another directory leading to a file
-
-[X] invalid input types
-
-[ ] a file or directory that the user does not have permission to access (?)
-
-[ ] names for output files that will result in invalid filenames
-
-*/

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fileIndex>
+	<word text="a">
+		<file name="b">3</file>
+		<file name="t.txt">3</file>
+	</word>
+	<word text="aa">
+		<file name="b">1</file>
+		<file name="t.txt">1</file>
+	</word>
+	<word text="is">
+		<file name="t.txt">2</file>
+		<file name="b">1</file>
+	</word>
+	<word text="simple">
+		<file name="b">2</file>
+		<file name="t.txt">2</file>
+	</word>
+	<word text="test">
+		<file name="z.txt">11</file>
+		<file name="b">3</file>
+		<file name="t.txt">3</file>
+	</word>
+	<word text="this">
+		<file name="b">1</file>
+		<file name="t.txt">1</file>
+	</word>
+	<word text="very">
+		<file name="b">1</file>
+		<file name="t.txt">1</file>
+	</word>
+	<word text="yup">
+		<file name="b">1</file>
+		<file name="t.txt">1</file>
+	</word>
+</fileIndex>

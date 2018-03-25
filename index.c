@@ -35,6 +35,50 @@ typedef struct _BigNode {
 /* global declaration of head of the "big" list so it can be referenced later */
 BigNode *big_head = NULL;
 
+int mystrcmp(const char * a, const char * b) {
+  printf("The strings to be compared are %s and %s\n", a, b);
+  int len_a = strlen(a);
+  int len_b = strlen(b);
+  printf("The length of a is %d and the length of b is %d\n", len_a, len_b);
+  int i = 0, j = 0;
+  while (i < len_a && j < len_b) {
+
+    if (a[i] == b[j]) {
+      i++;
+      j++;
+    }
+    else {
+      break;
+    }
+  }
+  if (i == len_a && j == len_b && i == j && len_a == len_b) {
+    printf("1\n");
+    return 0;
+  }
+  else if ((isalpha(a[i]) && isalpha(b[j])) || (isdigit(a[i]) && isdigit(b[j])))  {
+    printf("2\n");
+    return a[i] > b[j] ? -1: 1;
+  } 
+  else if (isdigit(a[i]) && isalpha(b[j])) {
+    printf("3\n");
+    return 1;
+  }
+  else if (isalpha(a[i]) && isdigit(b[j])) {
+    printf("4\n");
+    return -1;
+  }
+  else if (a[i] == '.') {
+    printf("5\n");
+    return -1;
+  }
+  else if (b[j] == '.') {
+    printf("6\n");
+    return 1;
+  }
+  printf("7\n");
+  return 1;
+}
+
 /* function to insert a new node into the 2D list at the correct spot; CAUTION: the input parameter must be a proper string (i.e. ending in '\0')! */
 int insert(char* s, char* f) {
   printf("Attempting to insert %s from file %s\n", s, f);
@@ -56,12 +100,12 @@ int insert(char* s, char* f) {
   /* checks whether or not the word being insterted already exists in the big list */
   BigNode* tmp1 = big_head; //searching pointer
   while (tmp1 != NULL) {
-    if (strcmp(s, tmp1->word) == 0) {
+    if (mystrcmp(s, tmp1->word) == 0) {
         /* the word does exist already; see whether or not its file exists yet */
 //        printf("the word \"%s\" is already in the list. checking if the file exists too...\n", s);
         LittleNode* tmp = tmp1->little_head; //searching pointer
         while (tmp->next != NULL) {
-          if (strcmp(f, tmp->file_name) == 0) {
+          if (mystrcmp(f, tmp->file_name) == 0) {
             /* file does exist, so increment file's word count */
             printf("the word \"%s\" is already in file %s. increasing file's word count...\n", tmp1->word, tmp->file_name);
             printf("current count for %s is %d\n", tmp1->word, tmp->count);
@@ -73,7 +117,7 @@ int insert(char* s, char* f) {
           tmp = tmp->next;
         }
 
-        if (strcmp(f, tmp->file_name) == 0) {
+        if (mystrcmp(f, tmp->file_name) == 0) {
           /* file does exist, so increment file's word count; this is outside the loop because we want to maintain the pointer to the last file node in the list, so we cut the while loop off before the end */
           printf("the word \"%s\" is already in file %s. increasing file's word count...\n", tmp1->word, tmp->file_name);
           printf("current count for %s is %d\n", tmp1->word, tmp->count);
@@ -116,7 +160,7 @@ int insert(char* s, char* f) {
     //printf("comparing %s and %s\n", new_big->word, tmp1->word);
 
     /* case where new_node's string is less than tmp1's string in terms of alphabetic precedence */
-    if (strcmp(new_big->word, tmp1->word) <= 0) {
+    if (mystrcmp(new_big->word, tmp1->word) <= 0) {
       //printf("%s is less than %s\n", new_big->word, tmp1->word);
       new_big->next = tmp1;
 
@@ -181,13 +225,13 @@ int len(char* str) {
 /* function to allocate a string composed of the digits of the given int and return a pointer to that string */
 char* int2str(int x) {
   int digits = 1;
+  int temp = x;
   while (x > 9) {
       x /= 10;
       digits++;
   }
-  
   char* str = (char*)malloc(digits * sizeof(char) + 1);
-  snprintf(str, 10, "%d", x);
+  snprintf(str, 10, "%d", temp);
 
   return str;
 }
@@ -200,6 +244,7 @@ int printList() {
   /* loop to iterate through the big list */
   while (tmp1 != NULL) {
     printf("%s\n", tmp1->word);
+
     LittleNode* tmp2 = tmp1->little_head;
     /* loop to iterate through the little list */
     while (tmp2 != NULL) {
@@ -239,6 +284,7 @@ int outputList(char* filename) {
       write(outputFile, "\">", 2);
 
       char* counteger = int2str(tmp2->count);
+      printf("%s\n", counteger);
       write(outputFile, counteger, len(counteger));
       free(counteger);
 
@@ -254,85 +300,52 @@ int outputList(char* filename) {
   return 0;
 }
 
-/* function to sort the sub-lists (files/counts) in correct order for output */
-int sortCounts() {
-  /* pointer to beginning of the list */
-  BigNode* tmp1 = big_head;
-  int i, flag;
-  LittleNode* highest; //node with the biggest count
-  LittleNode* sorted = (LittleNode*)malloc(sizeof(LittleNode));
-  LittleNode* tmp4 = sorted;
-
-  /* loop to iterate through the big list */
-  while (tmp1 != NULL) {
-
-    printf("size of the file list of %s is %d\n", tmp1->word, tmp1->little_size);
-    // loops to iterate through the little lists and find the element(s) with the lowest count each time 
-    for (i = 0; i < tmp1->little_size; i++) {
-      flag = 0; //indicator of whether or not the highest value at the end of the sub-loop is repeated
-      LittleNode* tmp2 = tmp1->little_head;
-      highest = tmp2;
-      tmp2 = tmp2->next;
-
-      while (tmp2 != NULL) {
-        if (tmp2->count > highest->count) {
-          highest = tmp2;
-        }
-
-        if (tmp2->count == highest->count) {
-//          flag = 1;
-        }
-
-        tmp2 = tmp2->next;
-      }
-
-      
-
-      if (flag) {
-        if(i == 0) {
-          
-        } else {
-
-        }
-
-      } else {
-          printf("found %s to have the highest count for %s\n", highest->file_name, tmp1->word);
-        if(i == 0) {
-          tmp4->file_name = highest->file_name;
-          tmp4->count = highest->count;
-        } else {
-          LittleNode* new_node = (LittleNode*)malloc(sizeof(LittleNode));
-          new_node->file_name = highest->file_name;
-          new_node->count = highest->count;
-          tmp4->next = new_node;
-          tmp4 = tmp4->next;
-        }
-      }
-    }
-
-    tmp4 = sorted;
-    while (tmp4 != NULL) {
-      printf("%s: %d\n", tmp4->file_name, tmp4->count);
-      tmp4 = tmp4->next;
-    }
-
-    // free the old (unsorted) little list
-    LittleNode* tmp2 = NULL; //leading pointer
-    LittleNode* tmp3 = tmp1->little_head; //trailing pointer
-    while (tmp3 != NULL){
-      tmp2 = tmp3->next;
-//      free(tmp3->file_name); //TODO make sure this is taken care of in other functions
-      free(tmp3);
-      tmp3 = tmp2;
-    }
-
-    // point to the new (sorted) list's head
-    tmp1->little_head = sorted;
-    tmp1 = tmp1->next;
+int count_sort(const void * x, const void * y) {
+  LittleNode * xi = (LittleNode *) x;
+  LittleNode * yi = (LittleNode *) y;
+  if (xi->count == yi->count) {
+    int test = mystrcmp(xi->file_name, yi->file_name);
+    printf("My string compare returned %d\n", test);
+    return test;
   }
+  return (int) (xi->count - yi->count);
+}
 
-  printf("finished sorting little lists\n");
-  return 0;
+/* main function used to sort the littlenodes in the list using the qsort library function */
+void sort_littlenodes() {
+  //printf("Inside sorting method\n");
+  BigNode * tmp1 = big_head;
+  while (tmp1 != NULL) {
+    LittleNode little_list [tmp1->little_size];
+    LittleNode * tmp2 = tmp1->little_head;
+    int i;
+    int num_files = tmp1->little_size;
+    for (i = 0; i < num_files; i++) {
+      little_list[i].file_name = tmp2->file_name;
+      little_list[i].count = tmp2->count;
+      tmp2 = tmp2->next;
+    }
+    qsort(little_list, (size_t) num_files, sizeof(LittleNode), count_sort);
+    tmp2 = tmp1->little_head;
+    for (i = num_files - 1; i >= 0; i--) {
+      tmp2->file_name = little_list[i].file_name;
+      tmp2->count = little_list[i].count;
+      tmp2 = tmp2->next;
+    }
+    tmp1 = tmp1->next;
+  }  
+  /*tmp1 = big_head;
+  while (tmp1 != NULL) {
+    int i;
+    int num_files = tmp1->little_size;
+    LittleNode * tmp2 = tmp1->little_head;
+    for (i = 0; i < num_files; i++) {
+      tmp2->file_name = little_list[i].file_name;
+      tmp2->count = little_list[i].count;
+      tmp2 = tmp2->next;
+    }
+    tmp1 = tmp1->next;
+  }*/
 }
 
 /* function to free the list so that the program can be run multiple times without
@@ -364,7 +377,7 @@ int freeList() {
 
 /* function to find if the input string has a forbidden name for a directory (i.e. do not try to open this) and if so, returns 0 */
 int isValid(char* str) {
-  if (strcmp(str, ".") == 0 || strcmp(str, "..") == 0 || strcmp(str, ".git") == 0 || strcmp(str, ".DS_store") == 0) {
+  if (mystrcmp(str, ".") == 0 || mystrcmp(str, "..") == 0 || mystrcmp(str, ".git") == 0 || mystrcmp(str, ".DS_store") == 0) {
     printf("Found %s to have an invalid name\n", str);
     return 0;
   }
@@ -671,6 +684,7 @@ int main(int argc, char** argv) {
   }
 
 //  sortCounts();
+    sort_littlenodes();
 
   outputList(argv[1]);
 

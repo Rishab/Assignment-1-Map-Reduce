@@ -1,7 +1,10 @@
+
 /*
  * mapred.c
  * Testing program.
  */
+
+#include "mapred.h"
 
 /* Map function: Takes all the words at each index and assigns a count to them.
    If a word is duplicated in the list, then it combines their counts together.

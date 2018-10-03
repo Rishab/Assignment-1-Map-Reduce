@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 /* Node struct for the linked lists */
 typedef struct _Node {
@@ -249,12 +251,68 @@ LinkedList** build_reduce(LinkedList** map_table, int num_maps, int num_reduces)
   return reduce_table;
 }
 
+/* function to output the contents of the input list to a document named in the input;
+ * if numbers == 1, the list's "words" will simply be written to the file
+ * otherwise, the "words" will be written, followed by a tab chartacter and their count
+ * NOTE: word lists should ouput each entry on its own line as "WORD\tCOUNT " and number lits as "NUMBER"
+ * additionally, a newline does NOT appear at the very bottom of the file (after final entry)
+ */
+int output_list(LinkedList* list, char* filename, int numbers) {
+
+  // creates the file pointer by opening the file (if it exits) or creating it (if it does not yet exist)
+  // also clears existing file data upon open
+  remove(filename); //TODO this should be unnecessary, because of the below O_TRUNC flag, but the file is not cleared as expected upon open below, so this step simply deletes the file first if it exists
+  int output_file = open(filename, O_WRONLY|O_TRUNC|O_CREAT, 777);
+
+  Node* tmp = list->head;
+  int i;
+  for (i = 0; i < list->size; i++) {
+    
+    // writes the current word in the list to the file
+    write(output_file, tmp->word, strlen(tmp->word));
+
+    // finds and writes the count of the given string, if not dealing only with sorting integers
+    if (numbers != 1) {
+      int count_str_len = snprintf(NULL, 0, "%d", tmp->count) + 1;
+      char* count_str = (char*) malloc(count_str_len);
+      snprintf(count_str, count_str_len, "%d", tmp->count);
+      write(output_file, "\t", 1);
+      write(output_file, count_str, strlen(count_str));
+      free(count_str);
+    }
+
+    // prints a \n to prepare for the next output, if this isn't the last one
+    if (i < list->size - 1) {
+      write(output_file, "\n", 1);
+    }
+
+    tmp = tmp->next;
+  }
+
+  // closes the output_file pointer
+  close(output_file);
+  return 0;
+}
+
 /* Testing method to make sure everything runs correctly (delete when done) */
 int main(int argc, char **argv) {
   int num_maps = 3;
   int num_reduces = 4;
 
-  // creates/populates the input map hash table
+  // designates the name for the output file
+  char* outfile = "output";
+
+  // creates/populates the input reduced_list (for testing file output)
+  LinkedList* reduced_list = create_list("bus", 3);
+  insert_node(reduced_list, "car", 2, 1);
+  insert_node(reduced_list, "train", 2, 1);
+  insert_node(reduced_list, "plane", 2, 1);
+
+  printf("Printing contents of reduced_list...\n");
+  traverse(reduced_list, 1);
+
+
+  // creates/populates the input map hash table (for testing sort)
   LinkedList** map_table = (LinkedList**) malloc(sizeof(LinkedList*) * num_maps);
   // printf("Created map_table with size %d\n", num_maps);
 
@@ -285,6 +343,14 @@ int main(int argc, char **argv) {
 
   // frees the reduce table (will NOT be done immediately after sort() is called for real)
   free_table(reduce_table, num_reduces);
+
+// TODO here ends the test of sort() and begins the test of output_list()
+
+  // outputs the reduces_list to the specified file
+  output_list(reduced_list, outfile, 0);
+
+  // frees reduced_list
+  traverse(reduced_list, 2);
 
   return 0;
 }

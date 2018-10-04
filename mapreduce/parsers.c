@@ -17,56 +17,6 @@
 
 #include "parsers.h"
 
-/*
- * Utility function for creating nodes for word count.
- */
-WCParseNode *WCParseNode_new(char *word, WCParseNode *next)
-{
-    WCParseNode *node = (WCParseNode *) malloc(sizeof(WCParseNode));
-    if (!node) {
-        return NULL;
-    }
-
-    node->word = word;
-    node->next = next;
-    return node;
-}
-
-
-/*
- * Utility function for creating a linked list for word count.
- * Just allocates memory and initializes fields.
- */
-WCLinkedList *WCLinkedList_new()
-{
-    WCLinkedList *list = (WCLinkedList *) malloc(sizeof(WCLinkedList));
-    if (!list) {
-        return NULL;
-    }
-
-    list->size = 0;
-    list->head = NULL;
-    return list;
-}
-
-/*
- * Utility/debugging function to print out each element of the word list.
- */
-void print_wc_list(WCLinkedList *list)
-{
-    if (!list) {
-        printf("no list\n");
-        return;
-    }
-
-    WCParseNode *ptr = list->head;
-    while (ptr) {
-        printf("%s,\t", ptr->word);
-        ptr = ptr->next;
-    }
-    printf("\n");
-}
-
 
 /*
  * Parses an input file, and constructs a WCLinkedList struct of the words
@@ -80,7 +30,8 @@ void print_wc_list(WCLinkedList *list)
  * from the beginning again. When we eventually do reach a delimeter, we put the
  * copied string from before together with the current buffer to make one big token.
  */
-WCLinkedList *word_count_parse(char *file)
+
+LinkedList *word_count_parse(char *file)
 {
     int fd = open(file, O_RDONLY);         // Only have to read from the file.
 
@@ -90,8 +41,8 @@ WCLinkedList *word_count_parse(char *file)
                 __FILE__, __LINE__, strerror(errno));
     }
 
-    WCLinkedList * word_list = WCLinkedList_new();
-    WCParseNode * word_ptr = word_list->head;
+    LinkedList * word_list = create_empty_list();
+    Node * word_ptr = word_list->head;
 
     char buffer[WC_BUF_SIZE];     // Buffer we're reading into.
     memset(buffer, 0, WC_BUF_SIZE);     // Zero out the buffer.
@@ -120,12 +71,12 @@ WCLinkedList *word_count_parse(char *file)
             if (strcmp(token, "") != 0) {
                 // Don't have a blank token, so insert into the list.
                 if (word_list->head != NULL) {
-                  word_ptr->next = WCParseNode_new(token, NULL);
+                  word_ptr->next = create_node(token, 1);
                   word_ptr = word_ptr->next;
                   word_list->size++;
                 }
                 else {
-                  word_list->head = WCParseNode_new(token, NULL);
+                  word_list->head = create_node(token, 1);
                   word_ptr = word_list->head;
                   word_list->size++;
                 }
@@ -148,13 +99,13 @@ WCLinkedList *word_count_parse(char *file)
             token = merge_tokens(partial_token, token);
 
             if (word_list->head != NULL) {
-              word_ptr->next = WCParseNode_new(token, NULL);
+              word_ptr->next = create_node(token, 1);
               word_ptr = word_ptr->next;
               word_list->size++;
             }
             
             else {
-              word_list->head = WCParseNode_new(token, NULL);
+              word_list->head = create_node(token, 1);
               word_ptr = word_list->head;
               word_list->size++;
             }
@@ -188,12 +139,6 @@ WCLinkedList *word_count_parse(char *file)
     }
 
     return word_list;
-}
-
-SLinkedList *sort_parse(char *file)
-{
-    // TODO: implement this
-    return NULL;
 }
 
 /*

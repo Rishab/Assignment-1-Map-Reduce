@@ -3,18 +3,18 @@
 #include <string.h>
 #include "parsers.h"
 
-struct tpTable {
+#ifndef MAPRED_H
+#define MAPRED_H
+
+
+typedef struct _TpTable {
   char * word;
   int count;
-  struct tpTable *next;
-} tpTable;
-
-struct tpTable * head;
-
-struct tpTable ** hashmap;
+  struct _TpTable *next;
+} TpTable;
 
 /* Utility function that creates nodes to be placed inside the hashmap */
-struct tpTable * createHashMapNode();
+TpTable * createHashMapNode(char *word);
 
 /* Utility function to create a hashmap with all the nodes that each thread or process will manage.
    This is to ensure that when map combines nodes together, the grouping isn't lost between processes
@@ -24,3 +24,6 @@ void fillHashMap();
 
 /* Utility function to print out the global hashmap for debugging purposes */
 void printmap();
+
+
+#endif

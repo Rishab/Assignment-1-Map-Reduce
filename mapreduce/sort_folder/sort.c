@@ -166,13 +166,12 @@ int insert_node (LinkedList* list, char* str, int count, int affect_size) {
 }
 
 /* Sorting method utilized by qsort in the build_reduce function (utilizes strcmp) */
-/* TODO implement a working comparison method for qsort
-  int comp(const void* x, const void* y) {
-  Node* x = *(Node**) x;
-  Node* y = *(Node**) y;
-  return strcmp(x->word, y->word);
+int comp(const void *x, const void *y) {
+    Node* a = *(Node**)x;
+    Node* b = *(Node**)y;    
+
+    return(strcmp(a->word, b->word));
 }
-*/
 
 /* Sorts the given map table into a reduce table of the required size/shape,
  * given the number of maps performed and the number of reduces to perform
@@ -187,7 +186,7 @@ LinkedList** build_reduce(LinkedList** map_table, int num_maps, int num_reduces)
   }
   // printf("The map table contains %d items\n", num_items);
 
-  // creates one big array for the output of the map_table to live in
+  // creates one Node* array for the output of the map_table to live in
   Node** map_output = (Node**) malloc(num_items * sizeof(Node*));
   int j;
   int k = 0;
@@ -205,7 +204,7 @@ LinkedList** build_reduce(LinkedList** map_table, int num_maps, int num_reduces)
   }
 
   // sorts the one big array holding all the map table's output
-  // TODO implement qsort correctly qsort(map_output, num_items, sizeof(Node*), comp);
+  qsort(map_output, num_items, sizeof(Node*), comp);
 
   // calculates how many items to place into each of the reduce_table's buckets, and the amount of runoff
   int runoff = num_items % num_reduces;

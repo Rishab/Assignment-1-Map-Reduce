@@ -11,6 +11,7 @@
 #include "mapred.h"
 #include "structures.h"
 #include "parsers.h"
+#include "utils.h"
 
 TpTable * head;
 
@@ -122,6 +123,13 @@ int main(int argc, char **argv) {
     //creating the list with all the tokens from the input file
     LinkedList *list = word_count_parse(input_file_path);
 
+    print_table(&list, 1);
+
+    char *array = list_to_array(list);
+
+    
+
+    /*
     int size_of_maps = list->size/num_maps; //used to determine how many nodes each thread/process will handle
     printf("The number of words at each index will be: %d\n", size_of_maps);
 
@@ -137,5 +145,6 @@ int main(int argc, char **argv) {
 
     //map function used to find similar words at the current index and combine their counts
     map(hashmap, num_maps, size_of_maps);
+    */
     return 0;
 }

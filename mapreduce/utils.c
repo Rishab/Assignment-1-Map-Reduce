@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <ctype.h>
 #include <fcntl.h>
@@ -209,3 +210,77 @@ LinkedList** build_reduce(LinkedList** map_table, int num_maps, int num_reduces)
   
   return reduce_table;
 }
+
+void print_memory(char *array, int size) {
+    printf("Number of words: %d\n", (int) array[0]);
+
+    int i;
+    for (i = 0; i < size; i++) {
+        printf("%d  ", array[i]);
+    }
+    printf("\n");
+}
+ 
+/*
+ * Turns a linked list of words and counts into a contiguous array.
+ * Organization of the array:
+ * First 4 bytes are metadata, tell the # of words in the array.
+ * After first 4 bytes (aka 1 int) , we have a bunch of blocks, 
+ * each corresponding with a word.
+ * Each block has:
+ *  - 4 bytes (1 int) to tell the size of the block
+ *  - 4 bytes (1 int) to tell the count of the word
+ *  - variable # of bytes for the null terminated word.
+ */
+char *list_to_array(LinkedList *list)
+{
+    // Traverse list to find the size of the array we need.
+    if (!list) { return NULL; }
+    
+    int num_words = list->size;
+    int size = sizeof(int);         // Need at least one int of metadata.
+
+    Node *ptr = list->head;
+    while (ptr) {
+        // Need two int's of space for the size and count,
+        // and space for the word + 1 for a null terminator.
+        size += 2 * sizeof(int) + strlen(ptr->word) + 1;
+        ptr = ptr->next;
+    }
+
+    printf("Size of list: %d\n", size);
+
+    char *array = (char *) calloc(size, size);
+
+    int i = 0;          // Indexes array so we can set different bytes of it.
+    array[i] = num_words;
+
+    i += sizeof(int);
+
+    // Traverse the linked list one more time, putting the 'block' for 
+    // each word into the array.
+    int block_size;
+    int word_length;
+    ptr = list->head;
+    while (ptr) {
+        word_length = strlen(ptr->word);
+        block_size = 2 * sizeof(int) + word_length + 1;
+        
+        array[i] = block_size;
+        i += sizeof(int);
+
+        array[i] = ptr->count;
+        i += sizeof(int);
+
+        strncpy(array + i, ptr->word, word_length);
+        i += word_length + 1;
+
+        ptr = ptr->next;
+    }
+
+    print_memory(array, size);
+
+    return array;
+}
+
+LinkedList *array_to_list(char *arr);

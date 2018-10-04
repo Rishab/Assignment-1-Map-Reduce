@@ -97,25 +97,27 @@ LinkedList *word_count_parse(char *file)
 
             // Merge the overflow (if we have any) and the token we just scanned.
             token = merge_tokens(partial_token, token);
+            if (strcmp(token, "") != 0) {
+                if (word_list->head != NULL) {
+                    word_ptr->next = create_node(token, 1);
+                    word_ptr = word_ptr->next;
+                    word_list->size++;
+                }
+                
+                else {
+                    word_list->head = create_node(token, 1);
+                    word_ptr = word_list->head;
+                    word_list->size++;
+                }
 
-            if (word_list->head != NULL) {
-              word_ptr->next = create_node(token, 1);
-              word_ptr = word_ptr->next;
-              word_list->size++;
+                // Reset all variables, and start the token search again.
+                i = 0;
+                memset(buffer, 0, WC_BUF_SIZE);
+                token = NULL;
+                partial_token = NULL;
+
             }
             
-            else {
-              word_list->head = create_node(token, 1);
-              word_ptr = word_list->head;
-              word_list->size++;
-            }
-
-            // Reset all variables, and start the token search again.
-            i = 0;
-            memset(buffer, 0, WC_BUF_SIZE);
-            token = NULL;
-            partial_token = NULL;
-
         } else {
             i++;
             if (i - 1 >= WC_BUF_SIZE + 1) {

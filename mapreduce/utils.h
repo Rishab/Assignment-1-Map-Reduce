@@ -19,9 +19,11 @@ int comp(const void *x, const void *y);
 
 LinkedList** build_reduce(LinkedList** map_table, int num_maps, int num_reduces);
 
-char *list_to_array(LinkedList *list);
+int bytes_to_int(unsigned char *c);
 
-LinkedList *array_to_list(char *arr);
+unsigned char *list_to_array(LinkedList *list);
+
+LinkedList *array_to_list(unsigned char *arr);
 
 
 #endif

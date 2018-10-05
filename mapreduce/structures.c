@@ -144,7 +144,9 @@ int insert_node (LinkedList* list, char* str, int count, int affect_size) {
 
   Node* head = list->head;
   if (head == NULL) {
-    str_exit(0, "Attempted insert into a list whose head is NULL!\n");
+    list->head = create_node(str, count);
+    list->size++;
+    return 0;
   }
 
   Node* tail = traverse(list, 0);

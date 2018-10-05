@@ -232,7 +232,7 @@ void print_memory(char *array, int size) {
  *  - 4 bytes (1 int) to tell the count of the word
  *  - variable # of bytes for the null terminated word.
  */
-char *list_to_array(LinkedList *list)
+unsigned char *list_to_array(LinkedList *list)
 {
     // Traverse list to find the size of the array we need.
     if (!list) { return NULL; }
@@ -243,14 +243,14 @@ char *list_to_array(LinkedList *list)
     Node *ptr = list->head;
     while (ptr) {
         // Need two int's of space for the size and count,
-        // and space for the word + 1 for a null terminator.
+        // and space for the word + 3 for a null terminators.
         size += 2 * sizeof(int) + strlen(ptr->word) + 1;
         ptr = ptr->next;
     }
 
     printf("Size of list: %d\n", size);
 
-    char *array = (char *) calloc(size, size);
+    unsigned char *array = (unsigned char *) calloc(size, size);
 
     int i = 0;          // Indexes array so we can set different bytes of it.
     array[i] = num_words;
@@ -283,4 +283,41 @@ char *list_to_array(LinkedList *list)
     return array;
 }
 
-LinkedList *array_to_list(char *arr);
+/*
+ * Function that takes 4 bytes of memory and turns them into an
+ * int. Assumed to be Little Endian memory.
+ * VERY VERY UNSAFE
+ */
+int bytes_to_int(unsigned char *c)
+{
+    return c[0] + (c[1] * 256) + (c[2] * 256 * 256) + (c[3] * 256 * 256 * 256);
+}
+
+LinkedList *array_to_list(unsigned char *arr)
+{
+    int i = 0;
+    int num_words = bytes_to_int(arr + i);
+    i += 4;
+    printf("num_words: %d\n", num_words);
+
+    LinkedList *list = create_empty_list();
+
+    Node *n;
+    int j;
+    int block_size;
+    int count;
+    for (j = 0; j < num_words; j++) {
+        block_size = bytes_to_int(arr + i);
+        i += 4;
+        count = bytes_to_int(arr + i);
+        i += 4;
+        char *word = (char *) malloc(block_size - 8);
+        strncpy(word, (char *) arr + i, block_size - 8);
+        i += block_size - 8;
+        //printf("array word: %s, length: %d\n", word, list->size);
+        insert_node(list, word, count, 1); 
+        //traverse(list, 1);
+    }
+
+    return list;
+}

@@ -127,6 +127,10 @@ int main(int argc, char **argv) {
 
     char *array = list_to_array(list);
 
+    LinkedList *list2 = array_to_list(array);
+
+    traverse(list2, 1);
+
     
 
     /*

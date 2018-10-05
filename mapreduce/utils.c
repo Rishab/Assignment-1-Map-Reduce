@@ -134,34 +134,29 @@ int comp(const void *x, const void *y) {
     return(strcmp(a->word, b->word));
 }
 
-/* Sorts the given map table into a reduce table of the required size/shape,
+/* Sorts the given counted mapped_list into a reduce_table of the required size/shape,
  * given the number of maps performed and the number of reduces to perform
  */
-LinkedList** build_reduce(LinkedList** map_table, int num_maps, int num_reduces) {
+LinkedList** build_reduce(LinkedList* mapped_list, int num_reduces) {
   
-  // discovers the number of strings/numbers stored in the map table
-  int num_items = 0;
-  int i;
-  for (i = 0; i < num_maps; i++) {
-    num_items += map_table[i]->size;
-  }
+  // discovers the number of strings/numbers stored in the mapped_list
+  int num_items = mapped_list->size;
+
   // printf("The map table contains %d items\n", num_items);
 
-  // creates one Node* array for the output of the map_table to live in
+  // creates one Node* array for the output of the mapped_list to live in
   Node** map_output = (Node**) malloc(num_items * sizeof(Node*));
-  int j;
-  int k = 0;
-  for (i = 0; i < num_maps; i++) {
-    Node* ptr = map_table[i]->head;
-    for (j = 0; j < map_table[i]->size; j++) {
-      Node* tmp = (Node*) malloc(sizeof(Node));
-      tmp->word = ptr->word;
-      tmp->count = ptr->count;
-      map_output[k] = tmp;
-      ptr = ptr->next;
-      // printf("map_output[%d]:: word: %s, count: %d\n", k, map_output[k]->word, map_output[k]->count);
-      k++;
-    }
+  int i;
+  int j = 0;
+  Node* ptr = mapped_list->head;
+  for (i = 0; i < num_items; i++) {
+    Node* tmp = (Node*) malloc(sizeof(Node));
+    tmp->word = ptr->word;
+    tmp->count = ptr->count;
+    map_output[j] = tmp;
+    ptr = ptr->next;
+    // printf("map_output[%d]:: word: %s, count: %d\n", k, map_output[k]->word, map_output[k]->count);
+    j++;
   }
 
   // sorts the one big array holding all the map table's output
@@ -185,7 +180,7 @@ LinkedList** build_reduce(LinkedList** map_table, int num_maps, int num_reduces)
   }
 
   // fills the reduce_table with entries from the map table in sorted order
-  k = 0;
+  int k = 0;
   for (i = 0; i < num_reduces; i++) {
     for (j = 0; j < reduce_table[i]->size; j++) {
       // places the correct item in the reduce_table

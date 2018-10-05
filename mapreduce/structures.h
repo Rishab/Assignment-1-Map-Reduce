@@ -26,6 +26,13 @@ typedef struct _LinkedList {
     Node *head;
 } LinkedList;
 
+
+/* ReduceArgs struct for passing things to threads */
+typedef struct _ReduceArgs {
+    LinkedList list;
+    int process;
+} ReduceArgs;
+
 void str_exit(int status, char* message);
 
 Node* traverse(LinkedList* list, int action);

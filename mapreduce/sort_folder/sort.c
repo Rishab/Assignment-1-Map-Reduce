@@ -293,6 +293,49 @@ int output_list(LinkedList* list, char* filename, int numbers) {
   return 0;
 }
 
+/* Reduce function: given list gets assigned to a process or thread to perform the reduce operation,
+ * that is, for all the words the list's counts get combined
+ * Whether there is a thread or process required, the list will run the algorithm
+ * using multiple processes or threads
+ */
+LinkedList* reduce(LinkedList* list) {
+  int i;
+  int synonyms;
+
+  LinkedList* reduced_list = (LinkedList*) malloc(sizeof(LinkedList));
+
+  Node* ptr_a = list->head;
+  if (ptr_a == NULL) {
+    printf("ERROR: Attempted to reduce on a list whose head is NULL! Exiting...\n");
+    exit(1);
+  }
+
+  Node* ptr_b = ptr_a->next;
+  for (i = 1; i < list->size; i++) {
+    synonyms = 0;
+    insert_node(reduced_list, ptr_a->word, ptr_a->count, 1);
+    while (i < list->size && strcmp(ptr_a->word, ptr_b->word) == 0) {
+      traverse(reduced_list, 0)->count += ptr_b->count;
+      ptr_a = ptr_b;
+      ptr_b = ptr_b->next;
+      synonyms++;
+      i++;
+    }
+    
+    if (synonyms == 0 && i == list->size - 1) {
+      // this is hit when the last element of the list was found to be a different word than the second-to-last element
+      // it simply adds the word to the output list with its original count (because a word ptr_b is otherwise never added; ptr_b usually only contributes counts)
+      insert_node(reduced_list, ptr_b->word, ptr_b->count, 1);
+    } else {
+      // this is hit most of the time; the pointers are simply updates
+      ptr_a = ptr_b;
+      ptr_b = ptr_b->next;
+    }
+  }
+
+  return reduced_list;
+}
+
 /* Testing method to make sure everything runs correctly (delete when done) */
 int main(int argc, char **argv) {
   int num_maps = 3;

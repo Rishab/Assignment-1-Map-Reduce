@@ -135,7 +135,7 @@ LinkedList *create_empty_list() {
 
 
 /* Function to insert a new node at the end of the existing linked-list, whose head pointer is the input parameter;
- * if affect_size == 0, the metadata regarding the list's size will not be changed, otherwise it will be incremented upon insert
+ * if affect_size == 0, the metadata regarding the list's size will not be changed, otherwise it will be incremented upon each insert_node
  */
 int insert_node (LinkedList* list, char* str, int count, int affect_size) {
   if (list == NULL) {
@@ -164,5 +164,15 @@ int insert_node (LinkedList* list, char* str, int count, int affect_size) {
   if (affect_size != 0) {
     list->size += 1;
   }
+  return 0;
+}
+
+/* Function to concatenate one linked list to the end of a linked list;
+ * both linked lists must be properly-constructed, i.e. they must have accurate ->size fields and their last nodes must have a ->next of NULL
+ */
+int concat_Lists (LinkedList* list_a, LinkedList* list_b) {
+  list_a->size += list_b->size;
+  traverse(list_a, 0)->next = list_b->head;
+  free(list_b); //TODO make sure it's okay to free list_b (since the nodes are still in-tact, but the LinkedList wrapper just gets free()d)
   return 0;
 }

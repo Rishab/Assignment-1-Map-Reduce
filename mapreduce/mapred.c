@@ -100,13 +100,13 @@ LinkedList * map(TpTable ** hashmap, LinkedList * list, int num_maps, int array_
     printf("This is fucked\n");
   }
   char * temp = list_to_array(list);
-  int array_length2 = bytes_to_int(temp); 
-  
+  int array_length2 = bytes_to_int(temp);
+
   ftruncate(sharedmem_fd, array_length2);
 
   char * ptr = (char *) mmap(&data_array, array_length2, PROT_READ | PROT_WRITE, MAP_SHARED, sharedmem_fd, 0);
-  
-  
+
+
   memcpy(ptr, temp, array_length2);
   print_memory(ptr, array_length2);
   printf("Our shared memory region is attached at the following address: %p\n", ptr);
@@ -138,7 +138,7 @@ LinkedList * map(TpTable ** hashmap, LinkedList * list, int num_maps, int array_
     wait(NULL);
     printf("Ending Child Process ID: %d and Parent Process ID: %d\n", getpid(), getppid());
   }
-  
+
   LinkedList *mapped_list = array_to_list(ptr);
 
   print_table(&mapped_list, 1);
@@ -161,7 +161,14 @@ int * determineMapSize(int num_words, int num_maps) {
 	int * temp = (int *) malloc(sizeof(int) * num_maps);
 	int i;
 	if (num_words < num_maps) {
-		printf("Will this actually ever happen?\n");
+    int temp_words = num_words;
+		for (i = 0; i < num_maps && temp_words != 0; i++) {
+      temp[i] = 1;
+      temp_words--;
+    }
+    for (i = num_words; i < num_maps; i++) {
+      temp[i] = 0;
+    }
 	}
 	else if (num_maps % num_words == 0) {
 		int words_per_map = num_maps/num_words;
@@ -418,7 +425,7 @@ int main(int argc, char **argv) {
 
     int * map_size = (int *) malloc(sizeof(int) * list->size);
     map_size = determineMapSize(list->size, num_maps);
-    
+
 
     int i;
 

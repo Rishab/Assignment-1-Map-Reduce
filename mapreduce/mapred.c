@@ -8,6 +8,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <sys/shm.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
 
 #include "mapred.h"
 #include "structures.h"
@@ -23,25 +27,179 @@ TpTable ** hashmap;
    Whether there is a thread or process required, the list will run the algorithm
    using multiple processes or threads
 */
-void map(TpTable ** hashmap, int num_maps, int size_of_maps) {
-  int i = 0;
-  int j = 0;
+LinkedList * map(TpTable ** hashmap, LinkedList * list, int num_maps, int array_size, int * map_size) {
 
-  //Create pointer to list
+  /*Convert Linked List to an array so that we can create a shared memory region that utilizes
+  our array for the processes */
+  size_t array_length = array_size;
+  printf("The length of the input array is: %d\n", array_length);
 
+  char * data_array = (char *) malloc(sizeof(char) * array_length);
+  /*
+  //setup variables for out shared memory region
+  printf("Our shared memory region will be %d bytes long.\n", array_size);
+
+  //key_t shm_key = 706286;
+
+  int shm_id = shmget(101, array_size, 0666 | IPC_CREAT);
+  if (shm_id < 0) {
+    printf("shmget failed to return a shared memory region");
+    return;
+  }
+
+  data_array = (char *) shmat(shm_id, (char*) 0, 0);
+  if (data_array == (void*)-1) {
+    printf("shmat failed to attach a shared memory region");
+  }
+
+  printf("1. Our shared memory region is attached at the following address: %p\n", data_array);
+
+  char * temp = list_to_array(list);
+  memcpy(data_array, temp, array_length);
+  free(temp);
+
+  printf("\n");
+  //print out the contents of the array for testing purposes
+  int i;
+  for (i = 0; i < array_length; i++) {
+  	printf("%d  ", data_array[i]);
+  }
+  printf("\n");
+
+  printf("2. Our shared memory region is attached at the following address: %p\n", data_array);
+  */
+
+  int sharedmem_fd = shm_open(data_array, O_RDWR | O_CREAT, 0666);
+
+  if (sharedmem_fd < 0) {
+    printf("This is fucked\n");
+  }
+  ftruncate(sharedmem_fd, array_length);
+
+  char * ptr = (char *) mmap(&data_array, array_length, PROT_READ | PROT_WRITE, MAP_SHARED, sharedmem_fd, 0);
+  char * temp = list_to_array(list);
+  memcpy(ptr, temp, array_length);
+  print_memory(ptr, array_length);
+  printf("Our shared memory region is attached at the following address: %p\n", ptr);
+
+  printf("Before startEnd function call\n");
+  int * start_end = startEnd(map, ptr, array_length, map_size, num_maps);
+
+  pid_t process_ids[num_maps];
+
+  int i;
   for (i = 0; i < num_maps; i++) {
-    for (j = 0; j < size_of_maps; j++) {
-      //traverse the entire list and compare it with the initial word for that process/thread
-      //combine as necessary
-      ; 
+    process_ids[i] = fork();
+    int start_index = start_end[2*i];
+    int end_index = start_end[2*i+1];
+    if (process_ids < 0) {
+      printf("Fork failed");
+      abort();
     }
+    else if (process_ids[i] == 0) {
+      printf("\nFork spawned a process sucessfully!\n");
+      printf("Child Process ID: %d and Parent Process ID: %d\n", getpid(), getppid());
+      processMap(start_index, end_index, ptr);
+      exit(0);
+    }
+  }
+
+  int n = num_maps;
+  for (i = 0; i < num_maps; i++) {
+    wait(NULL);
+    printf("Ending Child Process ID: %d and Parent Process ID: %d\n", getpid(), getppid());
+  }
+
+  print_memory(ptr, array_length);
+
+  LinkedList * mapped_list = create_empty_list();
+  mapped_list = array_to_list(ptr);
+
+  print_table(&mapped_list, 1);
+  return mapped_list;
+
+}
+
+void processMap(int start_index, int end_index, char * sharedMemory) {
+  int i = start_index;
+  printf("Start Index: %d End Index: %d\n", start_index, end_index);
+  while (i < end_index) {
+    int current_block_size = sharedMemory[i] + sharedMemory[i + 1] + sharedMemory[i + 2] + sharedMemory[i + 3];
+    printf("The current block_size is: %d\n", current_block_size);
+    sharedMemory[i+4] = 1;
+    i += current_block_size;
   }
 }
 
+int * determineMapSize(int num_words, int num_maps) {
+	int * temp = (int *) malloc(sizeof(int) * num_maps);
+	int i;
+	if (num_words < num_maps) {
+		printf("Will this actually ever happen?\n");
+	}
+	else if (num_maps % num_words == 0) {
+		int words_per_map = num_maps/num_words;
+		for (i = 0; i < num_maps; i++) {
+			temp[i] = words_per_map;
+		}
+	}
+
+	else {
+		int words_per_map = num_maps/num_words;
+		for (i = 0; i < num_maps; i++) {
+			temp[i] = words_per_map;
+		}
+		int remainder = num_maps % num_words;
+		for (i = 0; i < num_maps && remainder > 0; i++) {
+			temp[i]++;
+			remainder--;
+		}
+	}
+
+	return temp;
+}
+
+int * startEnd (TpTable ** map, char * sharedMemory, int array_length, int * map_size, int num_maps) {
+  printf("Inside StartEnd function");
+  int * start_end = (int *) malloc(sizeof(int) * 2 * num_maps);
+  int i;
+  int j = 4; //keeps track of the current index in the sharedMemory array
+  int tracker = 0; //keeps track of which process/thread maps to which indexes in the returned array
+
+  //traverse the entire map and sharedMemory to determine which processes map to which indexes in the array
+  for (i = 0; i < num_maps; i++) {
+    int current_num_words = map_size[i];
+    //printf("The current number of words to discover the chunk for are: %d\n", current_num_words);
+    int start = j;
+    int end = j;
+    //printf("The value of start is %d and end is %d\n", start, end);
+    while (j < array_length && current_num_words != 0) {
+      int current_block_size = sharedMemory[j] + sharedMemory[j + 1] + sharedMemory[j + 2] + sharedMemory[j + 3];
+      //printf("The size of the current block is: %d\n", current_block_size);
+      j += current_block_size;
+      current_num_words--;
+    }
+    end = j;
+    start_end[tracker] = start;
+    tracker++;
+    start_end[tracker] = end;
+    tracker++;
+  }
+
+  printf("\n");
+  for (i = 0; i < 2 * num_maps; i++) {
+    printf("%d\t", start_end[i]);
+  }
+  printf("\n");
+
+  return start_end;
+}
+
 /* Utility function that creates nodes to be placed inside the hashmap */
-TpTable * createHashMapNode(char * word) {
+TpTable * createHashMapNode(char * word, int count) {
   TpTable * temp = (TpTable *) malloc(sizeof(TpTable)); //create a new node
   temp->word = word; //copy the word from the global linked list to the node
+  temp->count = count;
   temp->next = NULL; //set pointer next to null to maintain order
   return temp;
 }
@@ -50,33 +208,32 @@ TpTable * createHashMapNode(char * word) {
    This is to ensure that when map combines nodes together, the grouping isn't lost between processes
    and threads so that everything stays consistent.
 */
-void fillHashMap(LinkedList * list, int num_maps, int size_of_maps) {
+void fillHashMap(LinkedList * list, int num_maps, int * map_size) {
   int i = 0;
   int j = 0;
 
   Node * list_ptr = list->head; //pointer to the head of the global linked list
 
   /* loop to traverse the entire linked list and insert nodes to respective indicies */
-  while (list_ptr->next != NULL) {
-
+  while (list_ptr != NULL) {
     //loop to traverse every index in the hashmap
     for (i = 0; i < num_maps; i++) {
       TpTable * hash_ptr = hashmap[i]; //pointer to the current index
       //loop to insert a number of words into the size of the hashmap
 
-      for (j = 0; j < size_of_maps; j++) {
+      for (j = 0; j < map_size[i]; j++) {
 
         //for the case that the current index of the hashmap has no head node
         if (hashmap[i] == NULL) {
-          TpTable * temp = createHashMapNode(list_ptr->word);
+          TpTable * temp = createHashMapNode(list_ptr->word, list_ptr->count);
           hashmap[i] = temp;
           hash_ptr = temp;
-          //printf("Inserted first node to index: %d\n", i);
+          //printf("Inserted first node to index: %d with word: %s\n", i, temp->word);
         }
 
         //for the case that we are inserting any node after the head or at the end of the list
         else if (hashmap[i] != NULL) {
-          TpTable * temp = createHashMapNode(list_ptr->word);
+          TpTable * temp = createHashMapNode(list_ptr->word, list_ptr->count);
           hash_ptr->next = temp;
           hash_ptr = temp;
           //printf("Inserted the %d node to the current index: %d\n", j, i);
@@ -155,7 +312,7 @@ void* reducer(void* reduce_args) {
       synonyms++;
       i++;
     }
-    
+
     if (synonyms == 0 && i == list->size - 1) {
       // this is hit when the last element of the list was found to be a different word than the second-to-last element
       // it simply adds the word to the output list with its original count (because a word ptr_b is otherwise never added; ptr_b usually only contributes counts)
@@ -185,7 +342,7 @@ LinkedList* reduce(LinkedList** reduce_table, int num_reduces, int process) {
   if (process == 1) {
     // run reducer() in a process
     pid_t* pids = (pid_t*) malloc(sizeof(pid_t) * num_reduces);
-    
+
     for (i = 0; i < num_reduces; i++) {
       printf("process!\n"); //TODO
     }
@@ -226,30 +383,49 @@ int main(int argc, char **argv) {
 
     print_table(&list, 1);
 
-    char *array = list_to_array(list);
+    int ll_size = list_size(list);
 
-    LinkedList *list2 = array_to_list(array);
+    printf("There are %d words in the linked list\n", list->size);
 
-    traverse(list2, 1);
+    int * map_size = (int *) malloc(sizeof(int) * list->size);
+    map_size = determineMapSize(list->size, num_maps);
 
-    
+    int i;
 
-    /*
-    int size_of_maps = list->size/num_maps; //used to determine how many nodes each thread/process will handle
-    printf("The number of words at each index will be: %d\n", size_of_maps);
-
+    printf("About to fill in the hash map\n");
     //global hashmap used to organize what each thread/process will handle
     hashmap = (TpTable **) malloc(sizeof(struct TpTable *) * num_maps);
-    int i = 0;
     for (i = 0; i < num_maps; i++) {
       hashmap[i] = NULL;
     }
 
-    fillHashMap(list, num_maps, size_of_maps);
+    fillHashMap(list, num_maps, map_size);
+    printf("Successfully filled in hashmap\n");
     printmap(hashmap, num_maps);
 
-    //map function used to find similar words at the current index and combine their counts
-    map(hashmap, num_maps, size_of_maps);
-    */
+    map(hashmap, list, num_maps, ll_size, map_size);
+
+
+
+    //LinkedList *list2 = array_to_list(array);
+
+    //traverse(list2, 1);
+
     return 0;
 }
+
+/*
+
+Things TO DO:
+
+[x] edit fillHashMap function and call that before call to map function
+
+[x] figure out how to split memory into chunks
+
+[x] create a spawn process function to spawn processes inside of map_
+
+[x] change the value of count in the map function for each and every array
+
+[x] convert array to linked list and return it from map
+
+*/

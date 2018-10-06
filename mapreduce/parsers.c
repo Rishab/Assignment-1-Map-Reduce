@@ -71,12 +71,12 @@ LinkedList *word_count_parse(char *file)
             if (strcmp(token, "") != 0) {
                 // Don't have a blank token, so insert into the list.
                 if (word_list->head != NULL) {
-                  word_ptr->next = create_node(token, 1);
+                  word_ptr->next = create_node(token, 0);
                   word_ptr = word_ptr->next;
                   word_list->size++;
                 }
                 else {
-                  word_list->head = create_node(token, 1);
+                  word_list->head = create_node(token, 0);
                   word_ptr = word_list->head;
                   word_list->size++;
                 }
@@ -99,13 +99,13 @@ LinkedList *word_count_parse(char *file)
             token = merge_tokens(partial_token, token);
             if (strcmp(token, "") != 0) {
                 if (word_list->head != NULL) {
-                    word_ptr->next = create_node(token, 1);
+                    word_ptr->next = create_node(token, 0);
                     word_ptr = word_ptr->next;
                     word_list->size++;
                 }
-                
+
                 else {
-                    word_list->head = create_node(token, 1);
+                    word_list->head = create_node(token, 0);
                     word_ptr = word_list->head;
                     word_list->size++;
                 }
@@ -117,7 +117,7 @@ LinkedList *word_count_parse(char *file)
                 partial_token = NULL;
 
             }
-            
+
         } else {
             i++;
             if (i - 1 >= WC_BUF_SIZE + 1) {

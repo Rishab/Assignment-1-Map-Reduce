@@ -13,8 +13,16 @@ typedef struct _TpTable {
   struct _TpTable *next;
 } TpTable;
 
+LinkedList * map();
+
+void processMap();
+
+int * determineMapSize();
+
+int * startEnd ();
+
 /* Utility function that creates nodes to be placed inside the hashmap */
-TpTable * createHashMapNode(char *word);
+TpTable * createHashMapNode();
 
 /* Utility function to create a hashmap with all the nodes that each thread or process will manage.
    This is to ensure that when map combines nodes together, the grouping isn't lost between processes

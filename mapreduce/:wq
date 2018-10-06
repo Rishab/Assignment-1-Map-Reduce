@@ -6,14 +6,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
 #include <pthread.h>
 #include <sys/shm.h>
 #include <fcntl.h>
-
-#include <sys/wait.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 
@@ -26,11 +22,6 @@ TpTable * head;
 
 TpTable ** hashmap;
 
-/*
- * Name that we have to give to shared memory on creating it.
- * We can unlink the shared memory using this name later.
- */
-const char *mem_name = "/shared_mem";
 
 /*
  * Our global linked list that we share in map and reduce, if using
@@ -59,7 +50,7 @@ LinkedList * map(TpTable ** hashmap, LinkedList * list, int num_maps, int array_
   size_t array_length = array_size;
   printf("The length of the input array is: %d\n", array_length);
 
-  char * data_array = (char *) calloc(sizeof(char) * array_length, sizeof(char) * array_length);
+  char * data_array = (char *) malloc(sizeof(char) * array_length);
   /*
   //setup variables for out shared memory region
   printf("Our shared memory region will be %d bytes long.\n", array_size);
@@ -94,25 +85,21 @@ LinkedList * map(TpTable ** hashmap, LinkedList * list, int num_maps, int array_
   printf("2. Our shared memory region is attached at the following address: %p\n", data_array);
   */
 
-  int sharedmem_fd = shm_open(mem_name, O_RDWR | O_CREAT, 0666);
+  int sharedmem_fd = shm_open(data_array, O_RDWR | O_CREAT, 0666);
 
   if (sharedmem_fd < 0) {
     printf("This is fucked\n");
   }
-  char * temp = list_to_array(list);
-  int array_length2 = bytes_to_int(temp); 
-  
-  ftruncate(sharedmem_fd, array_length2);
+  ftruncate(sharedmem_fd, array_length);
 
-  char * ptr = (char *) mmap(&data_array, array_length2, PROT_READ | PROT_WRITE, MAP_SHARED, sharedmem_fd, 0);
-  
-  
-  memcpy(ptr, temp, array_length2);
-  print_memory(ptr, array_length2);
+  char * ptr = (char *) mmap(&data_array, array_length, PROT_READ | PROT_WRITE, MAP_SHARED, sharedmem_fd, 0);
+  char * temp = list_to_array(list);
+  memcpy(ptr, temp, array_length);
+  print_memory(ptr, array_length);
   printf("Our shared memory region is attached at the following address: %p\n", ptr);
 
   printf("Before startEnd function call\n");
-  int * start_end = startEnd(hashmap, ptr, array_length2, map_size, num_maps);
+  int * start_end = startEnd(map, ptr, array_length, map_size, num_maps);
 
   pid_t process_ids[num_maps];
 
@@ -128,7 +115,7 @@ LinkedList * map(TpTable ** hashmap, LinkedList * list, int num_maps, int array_
     else if (process_ids[i] == 0) {
       printf("\nFork spawned a process sucessfully!\n");
       printf("Child Process ID: %d and Parent Process ID: %d\n", getpid(), getppid());
-      process_map(start_index, end_index, ptr);
+      processMap(start_index, end_index, ptr);
       exit(0);
     }
   }
@@ -138,21 +125,24 @@ LinkedList * map(TpTable ** hashmap, LinkedList * list, int num_maps, int array_
     wait(NULL);
     printf("Ending Child Process ID: %d and Parent Process ID: %d\n", getpid(), getppid());
   }
-  
-  LinkedList *mapped_list = array_to_list(ptr);
+
+  print_memory(ptr, array_length);
+
+  LinkedList * mapped_list = create_empty_list();
+  mapped_list = array_to_list(ptr);
 
   print_table(&mapped_list, 1);
   return mapped_list;
 
 }
 
-void process_map(int start_index, int end_index, char * shared_memory) {
+void processmap(int start_index, int end_index, char * sharedmemory) {
   int i = start_index;
   printf("Start Index: %d End Index: %d\n", start_index, end_index);
   while (i < end_index) {
-    int current_block_size = bytes_to_int(shared_memory + i);
+    int current_block_size = sharedMemory[i] + sharedMemory[i + 1] + sharedMemory[i + 2] + sharedMemory[i + 3];
     printf("The current block_size is: %d\n", current_block_size);
-    shared_memory[i+4] = 1;
+    sharedMemory[i+4] = 1;
     i += current_block_size;
   }
 }
@@ -189,22 +179,19 @@ int * startEnd (TpTable ** map, char * sharedMemory, int array_length, int * map
   printf("Inside StartEnd function");
   int * start_end = (int *) malloc(sizeof(int) * 2 * num_maps);
   int i;
-  int j = 8; //keeps track of the current index in the sharedMemory array
+  int j = 4; //keeps track of the current index in the sharedMemory array
   int tracker = 0; //keeps track of which process/thread maps to which indexes in the returned array
 
-  int shm_length = bytes_to_int(sharedMemory);
-
-  printf("SHM length: %d\n", shm_length);
   //traverse the entire map and sharedMemory to determine which processes map to which indexes in the array
   for (i = 0; i < num_maps; i++) {
     int current_num_words = map_size[i];
-    printf("The current number of words to discover the chunk for are: %d\n", current_num_words);
+    //printf("The current number of words to discover the chunk for are: %d\n", current_num_words);
     int start = j;
     int end = j;
     //printf("The value of start is %d and end is %d\n", start, end);
     while (j < array_length && current_num_words != 0) {
-      int current_block_size = bytes_to_int(sharedMemory + j);
-      printf("The size of the current block is: %d\n", current_block_size);
+      int current_block_size = sharedMemory[j] + sharedMemory[j + 1] + sharedMemory[j + 2] + sharedMemory[j + 3];
+      //printf("The size of the current block is: %d\n", current_block_size);
       j += current_block_size;
       current_num_words--;
     }
@@ -301,9 +288,9 @@ void printmap(TpTable ** map, int num_maps) {
  * using multiple processes or threads
  */
 void* reducer(void* reduce_args) {
-  ReduceArgs *args = (ReduceArgs *) reduce_args;
-  LinkedList* list = args->list;
-  int process = args->process;
+
+  LinkedList* list = ((ReduceArgs*)reduce_args)->list;
+  int process = ((ReduceArgs*)reduce_args)->process;
 
   int i;
   int synonyms;
@@ -377,7 +364,7 @@ LinkedList* reduce(LinkedList** reduce_table, int num_reduces, int process) {
     }
   } else {
     // run reducer() in a thread
-    pthread_t* thread_ids = (pthread_t*) malloc(sizeof(pthread_t) * num_reduces);
+    pthread_t* thread_ids = (phtread_t*) malloc(sizeof(pthread_t) * num_reduces);
     for (i = 0; i < num_reduces; i++) {
       ReduceArgs* reduce_args = (ReduceArgs*) malloc(sizeof(ReduceArgs));
       reduce_args->list = reduce_table[i];
@@ -386,7 +373,7 @@ LinkedList* reduce(LinkedList** reduce_table, int num_reduces, int process) {
     }
     for (i = 0; i < num_reduces; i++) {
       void* return_val;
-      pthread_join(thread_ids[i], &return_val); //TODO make sure pthread_join blocks until the thread it is looking at has returned ("exited")
+      pthread_join(&thread_ids[i], &return_val); //TODO make sure pthread_join blocks until the thread it is looking at has returned ("exited")
       LinkedList* return_segment = ((LinkedList*) return_val);
       reduce_return = concat_Lists(reduce_return, return_segment);
     }
@@ -412,19 +399,14 @@ int main(int argc, char **argv) {
 
     print_table(&list, 1);
 
-    int ll_size = list->size;
+    int ll_size = list_size(list);
 
     printf("There are %d words in the linked list\n", list->size);
 
     int * map_size = (int *) malloc(sizeof(int) * list->size);
     map_size = determineMapSize(list->size, num_maps);
-    
 
     int i;
-
-    for (i = 0; i < num_maps; i++) {
-        printf("Map #%d: %d\n", i, map_size[i]);
-    }
 
     printf("About to fill in the hash map\n");
     //global hashmap used to organize what each thread/process will handle
@@ -437,7 +419,13 @@ int main(int argc, char **argv) {
     printf("Successfully filled in hashmap\n");
     printmap(hashmap, num_maps);
 
-    global_list = map(hashmap, list, num_maps, ll_size, map_size);
+    map(hashmap, list, num_maps, ll_size, map_size);
+
+
+
+    //LinkedList *list2 = array_to_list(array);
+
+    //traverse(list2, 1);
 
     return 0;
 }

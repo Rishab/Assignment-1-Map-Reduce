@@ -16,8 +16,9 @@ int output_list(LinkedList* list, char* filename, int numbers);
 
 int comp(const void *x, const void *y);
 
-
 LinkedList** build_reduce(LinkedList* mapped_list, int num_reduces);
+
+void print_memory(unsigned char *array, int size);
 
 int bytes_to_int(unsigned char *c);
 

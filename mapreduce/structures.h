@@ -29,7 +29,7 @@ typedef struct _LinkedList {
 
 /* ReduceArgs struct for passing things to threads */
 typedef struct _ReduceArgs {
-    LinkedList list;
+    LinkedList *list;
     int process;
 } ReduceArgs;
 

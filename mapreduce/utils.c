@@ -206,7 +206,7 @@ LinkedList** build_reduce(LinkedList* mapped_list, int num_reduces) {
   return reduce_table;
 }
 
-void print_memory(char *array, int size) {
+void print_memory(unsigned char *array, int size) {
     printf("Number of words: %d\n", (int) array[0]);
 
     int i;
@@ -233,7 +233,7 @@ unsigned char *list_to_array(LinkedList *list)
     if (!list) { return NULL; }
     
     int num_words = list->size;
-    int size = sizeof(int);         // Need at least one int of metadata.
+    int size = sizeof(int) * 2;         // Need at least two ints of metadata.
 
     Node *ptr = list->head;
     while (ptr) {
@@ -248,6 +248,8 @@ unsigned char *list_to_array(LinkedList *list)
     unsigned char *array = (unsigned char *) calloc(size, size);
 
     int i = 0;          // Indexes array so we can set different bytes of it.
+    array[i] = size;
+    i += 4;
     array[i] = num_words;
 
     i += sizeof(int);
@@ -290,14 +292,13 @@ int bytes_to_int(unsigned char *c)
 
 LinkedList *array_to_list(unsigned char *arr)
 {
-    int i = 0;
+    int i = 4;
     int num_words = bytes_to_int(arr + i);
     i += 4;
     printf("num_words: %d\n", num_words);
 
     LinkedList *list = create_empty_list();
 
-    Node *n;
     int j;
     int block_size;
     int count;

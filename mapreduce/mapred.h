@@ -58,7 +58,7 @@ void fillHashMap(LinkedList * list, int num_maps, int * map_size);
 /* Utility function to print out the global hashmap for debugging purposes */
 void printmap(TpTable ** map, int num_maps);
 
-void* reducer(void* reduce_args);
+void* reduce_thread_handler(void* reduce_args);
 
 LinkedList* reduce(LinkedList** reduce_table, int num_reduces, int process);
 

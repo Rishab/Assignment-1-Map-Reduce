@@ -26,5 +26,6 @@ unsigned char *list_to_array(LinkedList *list);
 
 LinkedList *array_to_list(unsigned char *arr);
 
+LinkedList *combine(LinkedList *list);
 
 #endif

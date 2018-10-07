@@ -168,7 +168,7 @@ LinkedList** build_reduce(LinkedList* mapped_list, int num_reduces) {
 
   // allocates the space for the reduce_table, and for each list within
   LinkedList** reduce_table = (LinkedList**) malloc(sizeof(LinkedList*) * num_reduces);
-
+  /*
   for (i = 0; i < num_reduces; i++) {
     reduce_table[i] = (LinkedList*) malloc(sizeof(LinkedList));
     reduce_table[i]->size = size_per_bucket;
@@ -178,20 +178,25 @@ LinkedList** build_reduce(LinkedList* mapped_list, int num_reduces) {
       runoff--;
     }
   }
-
+  */
   // fills the reduce_table with entries from the map table in sorted order
   int k = 0;
   for (i = 0; i < num_reduces; i++) {
-    for (j = 0; j < reduce_table[i]->size; j++) {
+    reduce_table[i] = create_empty_list();
+    
+    
+    // Get size of reduce table entry.
+    int reduce_size = size_per_bucket;
+    if (runoff > 0) {
+        reduce_size++;
+        runoff--;
+    }
+    
+
+    for (j = 0; j < reduce_size; j++) {
       // places the correct item in the reduce_table
-      if (reduce_table[i]->head == NULL) {
-        Node* tmp = (Node*) malloc(sizeof(Node));
-        tmp->word = map_output[k]->word;
-        tmp->count = map_output[k]->count;
-        reduce_table[i]->head = tmp;
-      } else {
-        insert_node(reduce_table[i], map_output[k]->word, map_output[k]->count, 0);
-      }
+      insert_node(reduce_table[i], map_output[k]->word, map_output[k]->count, 1);
+      
 
       k++;
     }
@@ -316,4 +321,69 @@ LinkedList *array_to_list(unsigned char *arr)
     }
 
     return list;
+}
+
+LinkedList *combine(LinkedList *list) {
+    int i;
+    int synonyms;
+
+    // creates output list
+    LinkedList* reduced_list = create_empty_list();
+
+    // If no linked list, then return NULL.
+    if (list == NULL) {
+        return NULL;
+    }
+
+    // gets pointer to output list head, and checks if it is empty
+    Node* ptr_a = list->head;
+    if (ptr_a == NULL) {
+        return NULL;
+    }
+    
+    // If there is only one thing in the input, we don't have to combien
+    // and can just return the input back.
+    if (ptr_a->next == NULL) {
+        return list;
+    }
+
+    // ptr_b is the "further" of the two list pointers, which will always be one element later than ptr_a
+    Node* ptr_b = ptr_a->next;
+    // that's why i starts at 1: because it represents the position of ptr_b
+    for (i = 1; i < list->size; i++) {
+        synonyms = 0;
+        // inserts whatever ptr_a is, with its count
+        insert_node(reduced_list, ptr_a->word, ptr_a->count, 1);
+
+        // checks for equality of strings, and makes sure the index of the list isn't too far
+        while (i < list->size && strcmp(ptr_a->word, ptr_b->word) == 0) {
+            // adds count of ptr_b to count of the most-recently-inserted node in the output list
+            traverse(reduced_list, 0)->count += ptr_b->count;
+
+            // increments all the pointers and counters
+            ptr_a = ptr_b;
+      
+            if (ptr_b == NULL) {
+                break;
+            }
+            ptr_b = ptr_b->next;
+            synonyms++;
+            i++;
+        }
+
+        if (synonyms == 0 && i == list->size - 1) {
+            // this is hit when the last element of the list was found to be a different word than the second-to-last element
+            // it simply adds the word to the output list with its original count (because a word ptr_b is otherwise never added; ptr_b usually only contributes counts)
+            insert_node(reduced_list, ptr_b->word, ptr_b->count, 1);
+        } else {
+            // this is hit most of the time; the pointers are simply updates
+            ptr_a = ptr_b;
+            if (ptr_b == NULL) {
+                break;
+            }
+            ptr_b = ptr_b->next;  
+        }
+    }
+
+    return reduced_list;
 }

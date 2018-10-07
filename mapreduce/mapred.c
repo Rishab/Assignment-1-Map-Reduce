@@ -33,17 +33,24 @@ TpTable ** hashmap;
 const char *mem_name = "/shared_mem";
 
 /*
- * Our global linked list that we share in map and reduce, if using
- * threads.
+ * Our global linked list that we construct in map.
+ * If using threads, this is shared amongst the threads.
  */
-LinkedList *global_list = NULL;
+LinkedList *global_map_list = NULL;
+
 
 /*
- * Mutex that we'll lock before accessing the global_list.
+ * Global linked list that holds the results of reduce.
+ * Stores intermediate data when being shared across threads.
+ */
+LinkedList *global_reduce_list = NULL;
+
+
+/*
+ * Mutex that we'll lock before accessing the global_map_list
+ * or global_reduce_list.
  */
 pthread_mutex_t list_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-
 
 
 /*
@@ -88,15 +95,13 @@ LinkedList *map(char *filename, int processes, int num_maps) {
     printmap(hashmap, num_maps);
    
     if (processes) {
-        global_list = map_processes(hashmap, list, num_maps, ll_size, map_size);
+        global_map_list = map_processes(hashmap, list, num_maps, ll_size, map_size);
     } else {
-        global_list = map_threads(hashmap, num_maps);
+        global_map_list = map_threads(hashmap, num_maps);
     }
 
-    return global_list;
+    return global_map_list;
 }
-
-
 
 void *map_thread_handler(void *args) {
     printf("in thread\n");
@@ -115,8 +120,8 @@ void *map_thread_handler(void *args) {
 
     pthread_mutex_lock(&list_mutex);
     printf("locked\n");
-    global_list = concat_lists(global_list, list);
-    traverse(global_list, 1);
+    global_map_list = concat_lists(global_map_list, list);
+    traverse(global_map_list, 1);
     pthread_mutex_unlock(&list_mutex);
 
     pthread_exit(NULL);
@@ -139,7 +144,7 @@ LinkedList *map_threads(TpTable **hashmap, int num_maps) {
         pthread_join(threads[i], NULL);
     }
     
-    return global_list;
+    return global_map_list;
 }
 
 LinkedList *tpTable_to_list(TpTable *table) {
@@ -417,7 +422,7 @@ void printmap(TpTable ** map, int num_maps) {
  * Whether there is a thread or process required, the list will run the algorithm
  * using multiple processes or threads
  */
-void* reducer(void* reduce_args) {
+void* reduce_thread_handler(void* reduce_args) {
   ReduceArgs *args = (ReduceArgs *) reduce_args;
   LinkedList* list = args->list;
   int process = args->process;
@@ -425,18 +430,19 @@ void* reducer(void* reduce_args) {
   int i;
   int synonyms;
 
-  if (process == 1) { //TODO make work if process
-    list_to_array(list);
-  }
-
   // creates output list
-  LinkedList* reduced_list = (LinkedList*) malloc(sizeof(LinkedList));
+  LinkedList* reduced_list = create_empty_list();
 
   // gets pointer to output list head, and checks if it is empty
   Node* ptr_a = list->head;
   if (ptr_a == NULL) {
-    printf("ERROR: Attempted to reduce on a list whose head is NULL! Exiting...\n");
-    exit(1);
+    pthread_exit(NULL);
+    return NULL;
+  }
+
+  if (ptr_a->next == NULL) {
+    pthread_exit((void *) list);
+    return (void *) list;
   }
 
   // ptr_b is the "further" of the two list pointers, which will always be one element later than ptr_a
@@ -454,6 +460,10 @@ void* reducer(void* reduce_args) {
 
       // increments all the pointers and counters
       ptr_a = ptr_b;
+      
+      if (ptr_b == NULL) {
+        break;
+      }
       ptr_b = ptr_b->next;
       synonyms++;
       i++;
@@ -466,16 +476,19 @@ void* reducer(void* reduce_args) {
     } else {
       // this is hit most of the time; the pointers are simply updates
       ptr_a = ptr_b;
+      if (ptr_b == NULL) {
+        break;
+      }
       ptr_b = ptr_b->next;
     }
   }
-
-  if (process == 1) { //TODO make work if process
-    list_to_array(list);
-  }
-
-  pthread_exit((void*) reduced_list);
-  return (void*) reduced_list;
+/*
+  pthread_mutex_lock(&list_mutex);
+  global_reduce_list = concat_lists(global_reduce_list, reduced_list);
+  pthread_mutex_unlock(&list_mutex);
+*/
+  pthread_exit((void *) reduced_list);
+  return (void *) reduced_list;
 }
 
 /* reduce function: wrapper for the reducer() function;
@@ -499,17 +512,28 @@ LinkedList* reduce(LinkedList** reduce_table, int num_reduces, int process) {
       ReduceArgs* reduce_args = (ReduceArgs*) malloc(sizeof(ReduceArgs));
       reduce_args->list = reduce_table[i];
       reduce_args->process = process;
-      pthread_create(&thread_ids[i], NULL, reducer, (void*) reduce_args);
+      pthread_create(&thread_ids[i], NULL, &reduce_thread_handler, (void*) reduce_args);
     }
     for (i = 0; i < num_reduces; i++) {
-      void* return_val;
-      pthread_join(thread_ids[i], &return_val); //TODO make sure pthread_join blocks until the thread it is looking at has returned ("exited")
-      LinkedList* return_segment = ((LinkedList*) return_val);
-      reduce_return = concat_lists(reduce_return, return_segment);
+      LinkedList *reduced_return = (LinkedList *) malloc(sizeof(LinkedList));
+      pthread_join(thread_ids[i], (void **) &reduced_return);
+      
+      pthread_mutex_lock(&list_mutex);
+      global_reduce_list = concat_lists(global_reduce_list, reduced_return);
+      pthread_mutex_unlock(&list_mutex);
     }
+
   }
 
-  return reduce_return;
+  // After we get through the for loop, we know the global_reduce_list is
+  // updated with the combines done by the reducers. However, we still
+  // have to combine one more time to make sure that the same words in
+  // different reducers still get merged together.
+  pthread_mutex_lock(&list_mutex);
+  global_reduce_list = combine(global_reduce_list);
+  pthread_mutex_unlock(&list_mutex);
+
+  return global_reduce_list;
 }
 
 int main(int argc, char **argv) {
@@ -549,9 +573,16 @@ int main(int argc, char **argv) {
         return 1;
     }
    
-    global_list = map(input_file_path, processes, num_maps);
+    global_map_list = map(input_file_path, processes, num_maps);
 
-    traverse(global_list, 1);
+    LinkedList **reduce_table = build_reduce(global_map_list, num_reduces);
+    
+    print_table(reduce_table, num_reduces);
+
+    global_reduce_list = reduce(reduce_table, num_reduces, processes);
+
+
+    traverse(global_reduce_list, 1);
     return 0;
 }
 

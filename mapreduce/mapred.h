@@ -13,6 +13,16 @@ typedef struct _TpTable {
   struct _TpTable *next;
 } TpTable;
 
+void *map_thread_handler(void *args);
+
+LinkedList *tpTable_to_list(TpTable *table);
+
+/*
+ * Mapper function with threads.
+ * Just sets counts to 1 and puts the maps back together.
+ */
+LinkedList *map_threads(TpTable **hashmap, int num_maps);
+
 LinkedList * map(TpTable ** hashmap, LinkedList * list, int num_maps, int array_size, int * map_size);
 
 void process_map(int start_index, int end_index, char * sharedmemory);

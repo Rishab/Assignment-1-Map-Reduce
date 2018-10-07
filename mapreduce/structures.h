@@ -49,5 +49,6 @@ LinkedList *create_empty_list();
 
 int insert_node (LinkedList* list, char* str, int count, int affect_size);
 
+LinkedList *concat_lists(LinkedList *list_a, LinkedList *list_b);
 
 #endif

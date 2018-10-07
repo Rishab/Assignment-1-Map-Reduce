@@ -36,7 +36,7 @@ const char *mem_name = "/shared_mem";
  * Our global linked list that we share in map and reduce, if using
  * threads.
  */
-LinkedList *global_list;
+LinkedList *global_list = NULL;
 
 /*
  * Mutex that we'll lock before accessing the global_list.
@@ -44,8 +44,61 @@ LinkedList *global_list;
 pthread_mutex_t list_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
+void *map_thread_handler(void *args) {
+    printf("in thread\n");
+    
+    TpTable *table = (TpTable *) args;
+    LinkedList *list = tpTable_to_list(table);
+    
+    printf("linked list madei\n"); 
 
+    // Go through list and set all counts to 1.
+    Node *ptr = list->head;
+    while (ptr) {
+        ptr->count = 1;
+        ptr = ptr->next;
+    }
 
+    pthread_mutex_lock(&list_mutex);
+    printf("locked\n");
+    global_list = concat_lists(global_list, list);
+    traverse(global_list, 1);
+    pthread_mutex_unlock(&list_mutex);
+
+    pthread_exit(NULL);
+    return NULL;
+}
+
+/*
+ * Mapper function with threads.
+ * Just sets counts to 1 and puts the maps back together.
+ */
+LinkedList *map_threads(TpTable **hashmap, int num_maps) {
+    pthread_t *threads = (pthread_t *) malloc(sizeof(pthread_t) * num_maps);
+    int i;
+    for (i = 0; i < num_maps; i++) {
+        printf("starting thread #%d\n", i);
+        pthread_create(threads+i, NULL, &map_thread_handler, (void *)hashmap[i]);
+    }
+
+    for (i = 0; i < num_maps; i++) {
+        pthread_join(threads[i], NULL);
+    }
+    
+    return global_list;
+}
+
+LinkedList *tpTable_to_list(TpTable *table) {
+    LinkedList *list = create_empty_list();
+    TpTable *ptr = table;
+
+    while (ptr) {
+        insert_node(list, ptr->word, ptr->count, 1);
+        ptr = ptr->next;
+    }
+
+    return list;
+}
 
 /* Map function: Takes all the words at each index and assigns a count to them.
    If a word is duplicated in the list, then it combines their counts together.
@@ -398,7 +451,7 @@ LinkedList* reduce(LinkedList** reduce_table, int num_reduces, int process) {
       void* return_val;
       pthread_join(thread_ids[i], &return_val); //TODO make sure pthread_join blocks until the thread it is looking at has returned ("exited")
       LinkedList* return_segment = ((LinkedList*) return_val);
-      reduce_return = concat_Lists(reduce_return, return_segment);
+      reduce_return = concat_lists(reduce_return, return_segment);
     }
   }
 
@@ -421,6 +474,7 @@ int main(int argc, char **argv) {
     LinkedList *list = word_count_parse(input_file_path);
 
     print_table(&list, 1);
+    
 
     int ll_size = list->size;
 
@@ -446,6 +500,13 @@ int main(int argc, char **argv) {
     fillHashMap(list, num_maps, map_size);
     printf("Successfully filled in hashmap\n");
     printmap(hashmap, num_maps);
+    
+    
+    if (strcmp(parallel_type, "threads") == 0) {
+        global_list = map_threads(hashmap, num_maps);
+        traverse(global_list, 1);
+        return 0;
+    }
 
     global_list = map(hashmap, list, num_maps, ll_size, map_size);
 

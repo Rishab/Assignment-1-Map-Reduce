@@ -552,6 +552,15 @@ int main(int argc, char **argv) {
     global_list = map(input_file_path, processes, num_maps);
 
     traverse(global_list, 1);
+    /*    
+    if (strcmp(parallel_type, "threads") == 0) {
+        global_list = map_threads(hashmap, num_maps);
+        traverse(global_list, 1);
+        return 0;
+    }
+
+    global_list = map_processes(hashmap, list, num_maps, ll_size, map_size);
+    */
     return 0;
 }
 

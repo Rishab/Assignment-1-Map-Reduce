@@ -178,11 +178,14 @@ int * determineMapSize(int num_words, int num_maps) {
 	}
 
 	else {
-		int words_per_map = num_maps/num_words;
+    printf("The number of maps are: %d and words are: %d\n", num_maps, num_words);
+    int remainder = num_words % num_maps;
+		int words_per_map = (num_words - remainder)/num_maps;
+    printf("The words per map are: %d\n", words_per_map);
 		for (i = 0; i < num_maps; i++) {
 			temp[i] = words_per_map;
 		}
-		int remainder = num_maps % num_words;
+    printf("The remainder of words left is: %d\n", remainder);
 		for (i = 0; i < num_maps && remainder > 0; i++) {
 			temp[i]++;
 			remainder--;

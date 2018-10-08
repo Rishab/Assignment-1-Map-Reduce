@@ -417,15 +417,22 @@ void printmap(TpTable ** map, int num_maps) {
   }
 }
 
-/* reducer function (used by reduce): given list gets assigned to a process or thread to perform the reduce operation,
- * that is, for all the words the list's counts get combined
- * Whether there is a thread or process required, the list will run the algorithm
- * using multiple processes or threads
+/* reducer function (used by reduce): given list gets assigned to a thread to perform the reduce operation,
+ * that is, for all the words the list's counts get combined.
+ * Pass in a ReduceArgs struct, which contains the LinkedList we need to
+ * combine on and the app (0 for wordcount, 1 for sort).
+ * Note: if app == 1, since we don't have to combine duplicates, this
+ * essentially does nothing.
  */
 void* reduce_thread_handler(void* reduce_args) {
   ReduceArgs *args = (ReduceArgs *) reduce_args;
   LinkedList* list = args->list;
-  int process = args->process;
+  int app = args->app;
+
+  if (app == 1) {
+    pthread_exit((void *) list);
+    return (void *) list;
+  }
 
   int i;
   int synonyms;
@@ -482,11 +489,11 @@ void* reduce_thread_handler(void* reduce_args) {
       ptr_b = ptr_b->next;
     }
   }
-/*
-  pthread_mutex_lock(&list_mutex);
-  global_reduce_list = concat_lists(global_reduce_list, reduced_list);
-  pthread_mutex_unlock(&list_mutex);
-*/
+  
+  printf("Reduced list:\n");
+  traverse(reduced_list, 1);
+  printf("\n");
+
   pthread_exit((void *) reduced_list);
   return (void *) reduced_list;
 }
@@ -494,12 +501,12 @@ void* reduce_thread_handler(void* reduce_args) {
 /* reduce function: wrapper for the reducer() function;
  * reduce spawns threads or processes of reducer()s and returns a LinkedList of the combined input
  */
-LinkedList* reduce(LinkedList** reduce_table, int num_reduces, int process) {
+LinkedList* reduce(LinkedList** reduce_table, int num_reduces, int process, int app, char *outfile) {
   int i;
   LinkedList* reduce_return = (LinkedList*) malloc(sizeof(LinkedList));
 
   if (process == 1) {
-    // run reducer() in a process
+    // run process code for reducers
     pid_t* pids = (pid_t*) malloc(sizeof(pid_t) * num_reduces);
 
     for (i = 0; i < num_reduces; i++) {
@@ -511,7 +518,8 @@ LinkedList* reduce(LinkedList** reduce_table, int num_reduces, int process) {
     for (i = 0; i < num_reduces; i++) {
       ReduceArgs* reduce_args = (ReduceArgs*) malloc(sizeof(ReduceArgs));
       reduce_args->list = reduce_table[i];
-      reduce_args->process = process;
+      reduce_args->app = app;
+      
       pthread_create(&thread_ids[i], NULL, &reduce_thread_handler, (void*) reduce_args);
     }
     for (i = 0; i < num_reduces; i++) {
@@ -529,9 +537,12 @@ LinkedList* reduce(LinkedList** reduce_table, int num_reduces, int process) {
   // updated with the combines done by the reducers. However, we still
   // have to combine one more time to make sure that the same words in
   // different reducers still get merged together.
-  pthread_mutex_lock(&list_mutex);
-  global_reduce_list = combine(global_reduce_list);
-  pthread_mutex_unlock(&list_mutex);
+  
+  if (app == 0) {
+    pthread_mutex_lock(&list_mutex);
+    global_reduce_list = combine(global_reduce_list);
+    pthread_mutex_unlock(&list_mutex);
+  }
 
   return global_reduce_list;
 }
@@ -579,10 +590,14 @@ int main(int argc, char **argv) {
     
     print_table(reduce_table, num_reduces);
 
-    global_reduce_list = reduce(reduce_table, num_reduces, processes);
+    global_reduce_list = reduce(reduce_table, num_reduces, processes, app, output_file_path);
+    
 
-
+    printf("/n Global reduce list size: %d\n", global_reduce_list->size);
     traverse(global_reduce_list, 1);
+
+    output_list(global_reduce_list, output_file_path, app);
+    
     return 0;
 }
 

@@ -27,10 +27,13 @@ typedef struct _LinkedList {
 } LinkedList;
 
 
-/* ReduceArgs struct for passing things to threads */
+/* ReduceArgs struct for passing things to threads 
+ * Contains the LinkedList that we want to reduce on as well as an integer
+ * code for the app (0 for wordcount, 1 for sorting).
+ */
 typedef struct _ReduceArgs {
     LinkedList *list;
-    int process;
+    int app;
 } ReduceArgs;
 
 void str_exit(int status, char* message);

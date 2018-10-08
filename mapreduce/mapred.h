@@ -60,6 +60,6 @@ void printmap(TpTable ** map, int num_maps);
 
 void* reduce_thread_handler(void* reduce_args);
 
-LinkedList* reduce(LinkedList** reduce_table, int num_reduces, int process);
+LinkedList* reduce(LinkedList** reduce_table, int num_reduces, int process, int app, char *outfile);
 
 #endif

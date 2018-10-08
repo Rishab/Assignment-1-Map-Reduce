@@ -548,20 +548,65 @@ LinkedList* reduce(LinkedList** reduce_table, int num_reduces, int process, int 
 }
 
 int main(int argc, char **argv) {
-    //store command line arguments in variables
-    char * program_type = argv[1];
-    char * parallel_type = argv[2];
-    int num_maps = atoi(argv[3]);
-    int num_reduces = atoi(argv[4]);
-    char * input_file_path = argv[5];
-    char * output_file_path = argv[6];
 
-    //debugging statement for input arguments
-    printf("%s %s %d %d %s %s\n", program_type, parallel_type, num_maps, num_reduces, input_file_path, output_file_path);
-    
-    if (argc != 7) {
-        fprintf(stderr, "Usage: %s [wordcount, sort] [processes, threads] num_maps num_reduces input output\n", argv[0]);
+    printf("%d\n", argc);
+
+    if (argc != 13) {
+        fprintf(stderr, "Usage: %s --app [wordcount, sort] --impl [procs, threads] --maps num_maps --reduces num_reduces --input infile --output outfile\n", argv[0]);
         return 1;
+    }
+
+    //store command line arguments in variables
+    char * program_type_leadin = argv[1];
+    char * program_type = argv[2];
+
+    char * parallel_type_leadin = argv[3];
+    char * parallel_type = argv[4];
+
+    char * num_maps_leadin = argv[5];
+    int num_maps = atoi(argv[6]);
+
+    char * num_reduces_leadin = argv[7];
+    int num_reduces = atoi(argv[8]);
+
+    char * input_file_path_leadin = argv[9];
+    char * input_file_path = argv[10];
+
+    char * output_file_path_leadin = argv[11];
+    char * output_file_path = argv[12];
+
+    
+    //debugging statement for input arguments
+    printf("%s %s %s %s %s %d %s %d %s %s %s %s\n", program_type_leadin, program_type, parallel_type_leadin, parallel_type, num_maps_leadin, num_maps, num_reduces_leadin, num_reduces, input_file_path_leadin, input_file_path, output_file_path_leadin, output_file_path);
+
+    if (strcmp(program_type_leadin, "--app") != 0) {
+      fprintf(stderr, "Invalid argument lead-in for \"--app\": %s\n", program_type_leadin);
+      return 1;
+    }
+
+    if (strcmp(parallel_type_leadin, "--impl") != 0) {
+      fprintf(stderr, "Invalid argument lead-in for \"--impl\": %s\n", parallel_type_leadin);
+      return 1;
+    }
+
+    if (strcmp(num_maps_leadin, "--maps") != 0) {
+      fprintf(stderr, "Invalid argument lead-in for \"--maps\": %s\n", num_maps_leadin);
+      return 1;
+    }
+
+    if (strcmp(num_reduces_leadin, "--reduces") != 0) {
+      fprintf(stderr, "Invalid argument lead-in for \"--reduces\": %s\n", num_reduces_leadin);
+      return 1;
+    }
+
+    if (strcmp(input_file_path_leadin, "--input") != 0) {
+      fprintf(stderr, "Invalid argument lead-in for \"--input\": %s\n", input_file_path_leadin);
+      return 1;
+    }
+
+    if (strcmp(output_file_path_leadin, "--output") != 0) {
+      fprintf(stderr, "Invalid argument lead-in for \"--output\": %s\n", output_file_path_leadin);
+      return 1;
     }
 
     int app;
@@ -570,18 +615,40 @@ int main(int argc, char **argv) {
     } else if (strcmp(program_type, "sort") == 0) {
         app = 1;
     } else {
-        fprintf(stderr, "Invalid program type.\n");
+        fprintf(stderr, "Invalid program (--app) type (must be of [wordcount, sort])\n");
         return 1;
     }
 
     int processes;
-    if (strcmp(parallel_type, "processes") == 0) {
+    if (strcmp(parallel_type, "procs") == 0) {
         processes = 1;
     } else if (strcmp(parallel_type, "threads") == 0) {
         processes = 0;
     } else {
-        fprintf(stderr, "Invalid parallel type.\n");
+        fprintf(stderr, "Invalid parallel (--impl) type (must be of type [procs, threads])\n");
         return 1;
+    }
+
+    if (num_maps <= 0) {
+      fprintf(stderr, "Invalid number of maps for --maps (must be an integer > 0): %s\n", argv[6]);
+      return 1;
+    }
+
+    if (num_reduces <= 0) {
+      fprintf(stderr, "Invalid number of reduces for --reduces (must be an integer > 0): %s\n", argv[8]);
+      return 1;
+    }
+
+    FILE* test_input = fopen(input_file_path, "r");
+    if (test_input == NULL) {
+      fprintf(stderr, "Invalid input file path (--input): %s\n", input_file_path);
+      return 1;
+    }
+    fclose(test_input);
+
+    if (num_reduces <= 0) {
+      fprintf(stderr, "Invalid number of reduces for --reduces (must be an integer > 0): %s\n", argv[8]);
+      return 1;
     }
    
     global_map_list = map(input_file_path, processes, num_maps);

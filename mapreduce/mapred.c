@@ -435,7 +435,9 @@ void* reduce_thread_handler(void* reduce_args) {
   }
 
   int i;
-  int synonyms;
+
+//  printf("Printing input list...\n");
+//  traverse(list, 1);
 
   // creates output list
   LinkedList* reduced_list = create_empty_list();
@@ -452,40 +454,43 @@ void* reduce_thread_handler(void* reduce_args) {
     return (void *) list;
   }
 
+//  printf("%s\n", list->head->word);
+
   // ptr_b is the "further" of the two list pointers, which will always be one element later than ptr_a
   Node* ptr_b = ptr_a->next;
   // that's why i starts at 1: because it represents the position of ptr_b
   for (i = 1; i < list->size; i++) {
-    synonyms = 0;
     // inserts whatever ptr_a is, with its count
     insert_node(reduced_list, ptr_a->word, ptr_a->count, 1);
 
     // checks for equality of strings, and makes sure the index of the list isn't too far
-    while (i < list->size && strcmp(ptr_a->word, ptr_b->word) == 0) {
+    while ((i < list->size) && (strcmp(ptr_a->word, ptr_b->word) == 0)) {
       // adds count of ptr_b to count of the most-recently-inserted node in the output list
       traverse(reduced_list, 0)->count += ptr_b->count;
 
       // increments all the pointers and counters
+
+      if (ptr_b->next != NULL) {
+      i++;
       ptr_a = ptr_b;
-      
-      if (ptr_b == NULL) {
+      ptr_b = ptr_b->next;
+      } else {
         break;
       }
-      ptr_b = ptr_b->next;
-      synonyms++;
-      i++;
     }
 
-    if (synonyms == 0 && i == list->size - 1) {
+    if ((strcmp(ptr_a->word, ptr_b->word) != 0) && i == list->size - 1) {
       // this is hit when the last element of the list was found to be a different word than the second-to-last element
       // it simply adds the word to the output list with its original count (because a word ptr_b is otherwise never added; ptr_b usually only contributes counts)
       insert_node(reduced_list, ptr_b->word, ptr_b->count, 1);
     } else {
-      // this is hit most of the time; the pointers are simply updates
+      // this is hit most of the time; the pointers are simply updated
       ptr_a = ptr_b;
+//  /*
       if (ptr_b == NULL) {
         break;
       }
+//  */
       ptr_b = ptr_b->next;
     }
   }
@@ -530,7 +535,6 @@ LinkedList* reduce(LinkedList** reduce_table, int num_reduces, int process, int 
       global_reduce_list = concat_lists(global_reduce_list, reduced_return);
       pthread_mutex_unlock(&list_mutex);
     }
-
   }
 
   // After we get through the for loop, we know the global_reduce_list is
@@ -655,12 +659,14 @@ int main(int argc, char **argv) {
 
     LinkedList **reduce_table = build_reduce(global_map_list, num_reduces);
     
+    printf("Printing reduce table...\n");
     print_table(reduce_table, num_reduces);
+    printf("Creating global_reduce_list...\n");
 
     global_reduce_list = reduce(reduce_table, num_reduces, processes, app, output_file_path);
     
 
-    printf("/n Global reduce list size: %d\n", global_reduce_list->size);
+    printf("Global reduce list size: %d\n", global_reduce_list->size);
     traverse(global_reduce_list, 1);
 
     output_list(global_reduce_list, output_file_path, app);

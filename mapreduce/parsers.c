@@ -98,7 +98,7 @@ LinkedList *word_count_parse(char *file)
 
         buffer[i] = tolower(buffer[i]);     // Convert all characters to lowercase.
 
-        if (!isdelim(buffer[i])) {
+        if (!isalnum(buffer[i])) {
             // Delimeters are *pretty much* all nonalphanumeric characters,
             // except for a couple, and it's reasonable to assume we won't have
             // tabs or anything like that.

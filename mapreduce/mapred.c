@@ -223,8 +223,9 @@ LinkedList * map_processes(TpTable ** hashmap, LinkedList * list, int num_maps, 
   LinkedList *mapped_list = array_to_list(ptr);
 
   print_table(&mapped_list, 1);
-
   shm_unlink(data_array);
+  free(data_array);
+  free(temp);
 
   return mapped_list;
 

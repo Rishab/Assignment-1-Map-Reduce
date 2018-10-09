@@ -19,7 +19,7 @@ typedef struct _TpTable {
  * functions.
  * First, parse through the input file. Then, build a TpTable array
  * based on the number of maps we need to do. Then, send those off
- * to either processes (if processes == 1) or threads (if 
+ * to either processes (if processes == 1) or threads (if
  * processes == 0).
  * Return the result of the mapping operation.
  */
@@ -44,7 +44,11 @@ void process_map(int start_index, int end_index, char * sharedmemory);
 
 int * determineMapSize(int num_words, int num_maps);
 
-int * startEnd (TpTable ** map, char * sharedMemory, int array_length, int * map_size, int num_maps);
+int * startEnd (TpTable ** map, LinkedList ** reduce_table, int map_or_reduce, char * sharedMemory, int array_length, int * map_size, int num_maps);
+
+LinkedList * reduce_processes(LinkedList ** reduce_table, int * reduce_size, int num_reduces);
+
+void process_reduce(int start_index, int end_index, char * shared_memory, int num_words);
 
 /* Utility function that creates nodes to be placed inside the hashmap */
 TpTable * createHashMapNode(char * word, int count);

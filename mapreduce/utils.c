@@ -17,11 +17,11 @@
 
 /*
  * Gets array of m chunks from the file.
- * If the file is s bytes, this tries to separate the 
+ * If the file is s bytes, this tries to separate the
  * file into s/m sized chunks, but if that puts us in the middle
  * of a word, it skips to the end of the word before separating.
  *
- * The array is malloc'ed, so it and everything in it will need to 
+ * The array is malloc'ed, so it and everything in it will need to
  * be free'd when parsing.
  */
 char **split(char *file, int m)
@@ -33,7 +33,7 @@ char **split(char *file, int m)
     int s = st.st_size;         // Get size of file in bytes.
 
     printf("file size: %d\n", s);
-    
+
     int i;
     char b[2];
     int start = 0;
@@ -99,7 +99,7 @@ int output_list(LinkedList* list, char* filename, int numbers) {
   Node* tmp = list->head;
   int i;
   for (i = 0; i < list->size; i++) {
-    
+
     // writes the current word in the list to the file
     write(output_file, tmp->word, strlen(tmp->word));
 
@@ -129,7 +129,7 @@ int output_list(LinkedList* list, char* filename, int numbers) {
 /* Sorting method utilized by qsort in the build_reduce function (utilizes strcmp) */
 int comp(const void *x, const void *y) {
     Node* a = *(Node**)x;
-    Node* b = *(Node**)y;    
+    Node* b = *(Node**)y;
 
     return(strcmp(a->word, b->word));
 }
@@ -138,7 +138,7 @@ int comp(const void *x, const void *y) {
  * given the number of maps performed and the number of reduces to perform
  */
 LinkedList** build_reduce(LinkedList* mapped_list, int num_reduces) {
-  
+
   // discovers the number of strings/numbers stored in the mapped_list
   int num_items = mapped_list->size;
 
@@ -162,6 +162,8 @@ LinkedList** build_reduce(LinkedList* mapped_list, int num_reduces) {
   // sorts the one big array holding all the map table's output
   qsort(map_output, num_items, sizeof(Node*), comp);
 
+
+
   // calculates how many items to place into each of the reduce_table's buckets, and the amount of runoff
   int runoff = num_items % num_reduces;
   int size_per_bucket = num_items / num_reduces;
@@ -183,20 +185,20 @@ LinkedList** build_reduce(LinkedList* mapped_list, int num_reduces) {
   int k = 0;
   for (i = 0; i < num_reduces; i++) {
     reduce_table[i] = create_empty_list();
-    
-    
+
+
     // Get size of reduce table entry.
     int reduce_size = size_per_bucket;
     if (runoff > 0) {
         reduce_size++;
         runoff--;
     }
-    
+
 
     for (j = 0; j < reduce_size; j++) {
       // places the correct item in the reduce_table
       insert_node(reduce_table[i], map_output[k]->word, map_output[k]->count, 1);
-      
+
 
       k++;
     }
@@ -207,7 +209,7 @@ LinkedList** build_reduce(LinkedList* mapped_list, int num_reduces) {
     free(map_output[i]);
   }
   free(map_output);
-  
+
   return reduce_table;
 }
 
@@ -220,12 +222,12 @@ void print_memory(unsigned char *array, int size) {
     }
     printf("\n");
 }
- 
+
 /*
  * Turns a linked list of words and counts into a contiguous array.
  * Organization of the array:
  * First 4 bytes are metadata, tell the # of words in the array.
- * After first 4 bytes (aka 1 int) , we have a bunch of blocks, 
+ * After first 4 bytes (aka 1 int) , we have a bunch of blocks,
  * each corresponding with a word.
  * Each block has:
  *  - 4 bytes (1 int) to tell the size of the block
@@ -236,8 +238,9 @@ unsigned char *list_to_array(LinkedList *list)
 {
     // Traverse list to find the size of the array we need.
     if (!list) { return NULL; }
-    
+
     int num_words = list->size;
+    printf("The number of words in the list according to list to array is: %d\n", num_words);
     int size = sizeof(int) * 2;         // Need at least two ints of metadata.
 
     Node *ptr = list->head;
@@ -259,7 +262,7 @@ unsigned char *list_to_array(LinkedList *list)
 
     i += sizeof(int);
 
-    // Traverse the linked list one more time, putting the 'block' for 
+    // Traverse the linked list one more time, putting the 'block' for
     // each word into the array.
     int block_size;
     int word_length;
@@ -267,7 +270,7 @@ unsigned char *list_to_array(LinkedList *list)
     while (ptr) {
         word_length = strlen(ptr->word);
         block_size = 2 * sizeof(int) + word_length + 1;
-        
+
         array[i] = block_size;
         i += sizeof(int);
 
@@ -283,6 +286,73 @@ unsigned char *list_to_array(LinkedList *list)
     print_memory(array, size);
 
     return array;
+}
+
+unsigned char * table_to_array(LinkedList ** reduce_table, int * reduce_size, int num_reduces) {
+  // Traverse list to find the size of the array we need.
+  if (!reduce_table) { return NULL; }
+
+  int num_words = 0; //Number of words in the list
+  int size = sizeof(int) * 2; //the size of the list in bytes
+  int i;
+  int j;
+  for (i = 0; i < num_reduces; i++) {
+    Node * ptr = reduce_table[i]->head;
+    j = 0;
+    while (ptr != NULL && j < *(&reduce_size[i])) {
+      // Need two int's of space for the size and count,
+      // and space for the word + 3 for a null terminator
+      size += 2 * sizeof(int) + strlen(ptr->word) + 1;
+      ptr = ptr->next;
+      num_words++;
+      j++;
+    }
+  }
+
+  printf("Size of list: %d\n", size);
+
+  unsigned char * array = (char *) calloc(size, size);
+
+  i = 0;          // Indexes array so we can set different bytes of it.
+  array[i] = size;
+  i += 4;
+  array[i] = num_words;
+
+  i += sizeof(int);
+
+  // Traverse the reduce table one more time, putting the 'block' for
+  // each word into the array.
+  int block_size;
+  int word_length;
+  int index = 0;
+  //int k = 0;
+  for (i; i < size; i) {
+    Node * ptr = reduce_table[index]->head;
+    j = 0;
+    while (ptr != NULL && j < *(&reduce_size[index])) {
+
+        word_length = strlen(ptr->word);
+
+        block_size = 2 * sizeof(int) + word_length + 1;
+
+        array[i] = block_size;
+        i += sizeof(int);
+
+        array[i] = ptr->count;
+        i += sizeof(int);
+
+        strncpy(array + i, ptr->word, word_length);
+
+        i += word_length + 1;
+
+        ptr = ptr->next;
+      }
+      index++;
+    }
+
+  print_memory(array, size);
+
+  return array;
 }
 
 /*
@@ -316,7 +386,7 @@ LinkedList *array_to_list(unsigned char *arr)
         strncpy(word, (char *) arr + i, block_size - 8);
         i += block_size - 8;
         //printf("array word: %s, length: %d\n", word, list->size);
-        insert_node(list, word, count, 1); 
+        insert_node(list, word, count, 1);
         //traverse(list, 1);
     }
 
@@ -340,7 +410,7 @@ LinkedList *combine(LinkedList *list) {
     if (ptr_a == NULL) {
         return NULL;
     }
-    
+
     // If there is only one thing in the input, we don't have to combien
     // and can just return the input back.
     if (ptr_a->next == NULL) {
@@ -362,7 +432,7 @@ LinkedList *combine(LinkedList *list) {
 
             // increments all the pointers and counters
             ptr_a = ptr_b;
-      
+
             if (ptr_b == NULL) {
                 break;
             }
@@ -381,7 +451,7 @@ LinkedList *combine(LinkedList *list) {
             if (ptr_b == NULL) {
                 break;
             }
-            ptr_b = ptr_b->next;  
+            ptr_b = ptr_b->next;
         }
     }
 

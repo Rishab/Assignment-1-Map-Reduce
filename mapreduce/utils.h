@@ -24,6 +24,8 @@ int bytes_to_int(unsigned char *c);
 
 unsigned char *list_to_array(LinkedList *list);
 
+unsigned char * table_to_array(LinkedList ** reduce_table, int * reduce_size, int num_reduces); 
+
 LinkedList *array_to_list(unsigned char *arr);
 
 LinkedList *combine(LinkedList *list);

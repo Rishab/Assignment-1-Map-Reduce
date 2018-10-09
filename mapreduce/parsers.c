@@ -17,6 +17,18 @@
 
 #include "parsers.h"
 
+/*
+ * Custom function to check delimiters because they're not just
+ * non-alphanumerics in this assignment.
+ */
+static int isdelim(char c)
+{
+    if (c == ' ' || c == '.' || c == ',' || c == ';' || c == ':' || c == '!' || c == '-' || c == '\n') {
+        return 0;
+    }
+
+    return 1;
+}
 
 /*
  * Parses an input file, and constructs a WCLinkedList struct of the words
@@ -86,7 +98,7 @@ LinkedList *word_count_parse(char *file)
 
         buffer[i] = tolower(buffer[i]);     // Convert all characters to lowercase.
 
-        if (!isalnum(buffer[i])) {
+        if (!isdelim(buffer[i])) {
             // Delimeters are *pretty much* all nonalphanumeric characters,
             // except for a couple, and it's reasonable to assume we won't have
             // tabs or anything like that.

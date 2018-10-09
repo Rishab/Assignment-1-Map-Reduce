@@ -134,10 +134,18 @@ int comp(const void *x, const void *y) {
     return(strcmp(a->word, b->word));
 }
 
+int sort_comp(const void *x, const void *y) {
+    Node *a = *(Node**)x;
+    Node *b = *(Node **)y;
+    int a_int = atoi(a->word);
+    int b_int = atoi(b->word);
+    return a_int > b_int;
+}
+
 /* Sorts the given counted mapped_list into a reduce_table of the required size/shape,
  * given the number of maps performed and the number of reduces to perform
  */
-LinkedList** build_reduce(LinkedList* mapped_list, int num_reduces) {
+LinkedList** build_reduce(LinkedList* mapped_list, int num_reduces, int app) {
 
   // discovers the number of strings/numbers stored in the mapped_list
   int num_items = mapped_list->size;
@@ -160,7 +168,12 @@ LinkedList** build_reduce(LinkedList* mapped_list, int num_reduces) {
   }
 
   // sorts the one big array holding all the map table's output
-  qsort(map_output, num_items, sizeof(Node*), comp);
+  if (app == 0) {
+    qsort(map_output, num_items, sizeof(Node*), comp);
+  } else {
+    qsort(map_output, num_items, sizeof(Node*), sort_comp);
+  }
+
 
 
 
@@ -256,9 +269,9 @@ unsigned char *list_to_array(LinkedList *list)
     unsigned char *array = (unsigned char *) calloc(size, size);
 
     int i = 0;          // Indexes array so we can set different bytes of it.
-    array[i] = size;
+    int_to_bytes(size, array);
     i += 4;
-    array[i] = num_words;
+    int_to_bytes(num_words, array + i);
 
     i += sizeof(int);
 
@@ -314,9 +327,9 @@ unsigned char * table_to_array(LinkedList ** reduce_table, int * reduce_size, in
   unsigned char * array = (char *) calloc(size, size);
 
   i = 0;          // Indexes array so we can set different bytes of it.
-  array[i] = size;
+  int_to_bytes(size, array);
   i += 4;
-  array[i] = num_words;
+  int_to_bytes(num_words, array + i);
 
   i += sizeof(int);
 
@@ -365,6 +378,25 @@ int bytes_to_int(unsigned char *c)
     return c[0] + (c[1] * 256) + (c[2] * 256 * 256) + (c[3] * 256 * 256 * 256);
 }
 
+/*
+ * Decomposes the integer x into bytes, and puts in the 4 bytes starting
+ * from c.
+ * VERY VERY UNSAFE
+ */
+void int_to_bytes(int x, unsigned char *c)
+{
+    c[3] = x / (256 * 256 * 256);
+    
+    x = x % (256 * 256 * 256);
+    c[2] = x / (256 * 256);
+
+    x = x % (256 * 256);
+    c[1] = x / 256;
+
+    x = x % 256;
+    c[0] = x;
+}
+
 LinkedList *array_to_list(unsigned char *arr)
 {
     int i = 4;
@@ -383,6 +415,12 @@ LinkedList *array_to_list(unsigned char *arr)
         count = bytes_to_int(arr + i);
         i += 4;
         char *word = (char *) malloc(block_size - 8);
+        
+        if (!word) {
+            printf("cannot allocate memory when j = %d\n", j);
+            exit(1);
+        }
+        
         strncpy(word, (char *) arr + i, block_size - 8);
         i += block_size - 8;
         //printf("array word: %s, length: %d\n", word, list->size);

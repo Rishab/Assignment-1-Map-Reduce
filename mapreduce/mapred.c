@@ -11,6 +11,7 @@
 #include <pthread.h>
 #include <sys/shm.h>
 #include <fcntl.h>
+#include <errno.h>
 
 #include <sys/wait.h>
 #include <sys/types.h>
@@ -121,7 +122,7 @@ void *map_thread_handler(void *args) {
     pthread_mutex_lock(&list_mutex);
     printf("locked\n");
     global_map_list = concat_lists(global_map_list, list);
-    traverse(global_map_list, 1);
+    //traverse(global_map_list, 1);
     pthread_mutex_unlock(&list_mutex);
 
     pthread_exit(NULL);
@@ -202,6 +203,7 @@ LinkedList * map_processes(TpTable ** hashmap, LinkedList * list, int num_maps, 
     int end_index = start_end[2*i+1];
     if (process_ids[i] < 0) {
       printf("Fork failed");
+      printf("Error: %s\n", strerror(errno));
       abort();
     }
     else if (process_ids[i] == 0) {
@@ -297,7 +299,7 @@ int * startEnd (TpTable ** map, LinkedList ** reduce_table, int map_or_reduce, c
       //printf("The value of start is %d and end is %d\n", start, end);
       while (j < array_length && current_num_words != 0) {
         int current_block_size = bytes_to_int(sharedMemory + j);
-        printf("The size of the current block is: %d\n", current_block_size);
+        //printf("The size of the current block is: %d\n", current_block_size);
         j += current_block_size;
         current_num_words--;
       }
@@ -331,7 +333,7 @@ int * startEnd (TpTable ** map, LinkedList ** reduce_table, int map_or_reduce, c
       //printf("The value of start is %d and end is %d\n", start, end);
       while (j < array_length && current_num_words != 0) {
         int current_block_size = bytes_to_int(sharedMemory + j);
-        printf("The size of the current block is: %d\n", current_block_size);
+        //printf("The size of the current block is: %d\n", current_block_size);
         j += current_block_size;
         current_num_words--;
       }
@@ -503,14 +505,14 @@ void* reduce_thread_handler(void* reduce_args) {
   }
 
   printf("Reduced list:\n");
-  traverse(reduced_list, 1);
+  //traverse(reduced_list, 1);
   printf("\n");
 
   pthread_exit((void *) reduced_list);
   return (void *) reduced_list;
 }
 
-int * determineReduceSize(LinkedList ** reduce_table, num_reduces) {
+int * determineReduceSize(LinkedList ** reduce_table, int num_reduces) {
   int * temp = (int *) malloc(sizeof(int) * num_reduces);
   int i;
   for (i = 0; i < num_reduces; i++) {
@@ -534,7 +536,7 @@ LinkedList * reduce_processes(LinkedList ** reduce_table, int * reduce_size, int
   char * data_array = (char *) calloc(sizeof(char) * array_length, sizeof(char) * array_length);
 
   /* get the file descriptor of the shared memory */
-  int sharedmem_fd = shm_open(data_array, O_RDWR | O_CREAT, 0666);
+  int sharedmem_fd = shm_open(mem_name, O_RDWR | O_CREAT, 0666);
 
   if (sharedmem_fd < 0) {
     printf("Failed to return a file descriptor\n");
@@ -557,7 +559,8 @@ LinkedList * reduce_processes(LinkedList ** reduce_table, int * reduce_size, int
     int start_index = start_end[2*i];
     int end_index = start_end[2*i+1];
     if (process_ids[i] < 0) {
-      printf("Fork failed\n");
+      printf("Fork failed in reduce\n");
+      printf("Error: %s\n", strerror(errno));
       abort();
     } else if (process_ids[i] == 0) {
       printf("\nFork spawned a process successfully in reduce!\n");
@@ -833,10 +836,10 @@ int main(int argc, char **argv) {
 
     global_map_list = map(input_file_path, processes, num_maps);
 
-    LinkedList **reduce_table = build_reduce(global_map_list, num_reduces);
+    LinkedList **reduce_table = build_reduce(global_map_list, num_reduces, app);
 
     printf("Printing reduce table...\n");
-    print_table(reduce_table, num_reduces);
+    //print_table(reduce_table, num_reduces);
     printf("Creating global_reduce_list...\n");
 
     global_reduce_list = reduce(reduce_table, num_reduces, processes, app, output_file_path);
@@ -844,7 +847,7 @@ int main(int argc, char **argv) {
 
 
     printf("Global reduce list size: %d\n", global_reduce_list->size);
-    traverse(global_reduce_list, 1);
+   // traverse(global_reduce_list, 1);
 
     output_list(global_reduce_list, output_file_path, app);
 

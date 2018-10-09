@@ -290,7 +290,7 @@ unsigned char *list_to_array(LinkedList *list)
         array[i] = ptr->count;
         i += sizeof(int);
 
-        strncpy(array + i, ptr->word, word_length);
+        strncpy((char *) array + i, ptr->word, word_length);
         i += word_length + 1;
 
         ptr = ptr->next;
@@ -324,7 +324,7 @@ unsigned char * table_to_array(LinkedList ** reduce_table, int * reduce_size, in
 
   printf("Size of list: %d\n", size);
 
-  unsigned char * array = (char *) calloc(size, size);
+  unsigned char * array = (unsigned char *) calloc(size, size);
 
   i = 0;          // Indexes array so we can set different bytes of it.
   int_to_bytes(size, array);
@@ -339,7 +339,7 @@ unsigned char * table_to_array(LinkedList ** reduce_table, int * reduce_size, in
   int word_length;
   int index = 0;
   //int k = 0;
-  for (i; i < size; i) {
+  while (i < size) {
     Node * ptr = reduce_table[index]->head;
     j = 0;
     while (ptr != NULL && j < *(&reduce_size[index])) {
@@ -354,14 +354,14 @@ unsigned char * table_to_array(LinkedList ** reduce_table, int * reduce_size, in
         array[i] = ptr->count;
         i += sizeof(int);
 
-        strncpy(array + i, ptr->word, word_length);
+        strncpy((char *) array + i, ptr->word, word_length);
 
         i += word_length + 1;
 
         ptr = ptr->next;
       }
-      index++;
-    }
+    index++;
+  }
 
   print_memory(array, size);
 

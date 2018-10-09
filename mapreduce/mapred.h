@@ -40,15 +40,15 @@ LinkedList *map_threads(TpTable **hashmap, int num_maps);
 
 LinkedList *map_processes(TpTable ** hashmap, LinkedList * list, int num_maps, int array_size, int * map_size);
 
-void process_map(int start_index, int end_index, char * sharedmemory);
+void process_map(int start_index, int end_index, unsigned char * sharedmemory);
 
 int * determineMapSize(int num_words, int num_maps);
 
-int * startEnd (TpTable ** map, LinkedList ** reduce_table, int map_or_reduce, char * sharedMemory, int array_length, int * map_size, int num_maps);
+int * startEnd (TpTable ** map, LinkedList ** reduce_table, int map_or_reduce, unsigned char * sharedMemory, int array_length, int * map_size, int num_maps);
 
 LinkedList * reduce_processes(LinkedList ** reduce_table, int * reduce_size, int num_reduces);
 
-void process_reduce(int start_index, int end_index, char * shared_memory, int num_words);
+void process_reduce(int start_index, int end_index, unsigned char * shared_memory, int num_words);
 
 /* Utility function that creates nodes to be placed inside the hashmap */
 TpTable * createHashMapNode(char * word, int count);

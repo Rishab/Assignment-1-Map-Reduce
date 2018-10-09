@@ -170,7 +170,7 @@ LinkedList * map_processes(TpTable ** hashmap, LinkedList * list, int num_maps, 
   /*Convert Linked List to an array so that we can create a shared memory region that utilizes
   our array for the processes */
   size_t array_length = array_size;
-  printf("The length of the input array is: %d\n", array_length);
+  printf("The length of the input array is: %d\n", (int) array_length);
 
   char * data_array = (char *) calloc(sizeof(char) * array_length, sizeof(char) * array_length);
 
@@ -179,12 +179,12 @@ LinkedList * map_processes(TpTable ** hashmap, LinkedList * list, int num_maps, 
   if (sharedmem_fd < 0) {
     printf("File descriptor failed to open.\n");
   }
-  char * temp = list_to_array(list);
+  unsigned char * temp = list_to_array(list);
   int array_length2 = bytes_to_int(temp);
 
   ftruncate(sharedmem_fd, array_length2);
 
-  char * ptr = (char *) mmap(&data_array, array_length2, PROT_READ | PROT_WRITE, MAP_SHARED, sharedmem_fd, 0);
+  unsigned char * ptr = (unsigned char *) mmap(&data_array, array_length2, PROT_READ | PROT_WRITE, MAP_SHARED, sharedmem_fd, 0);
 
 
   memcpy(ptr, temp, array_length2);
@@ -214,7 +214,6 @@ LinkedList * map_processes(TpTable ** hashmap, LinkedList * list, int num_maps, 
     }
   }
 
-  int n = num_maps;
   for (i = 0; i < num_maps; i++) {
     wait(NULL);
     printf("Ending Child Process ID: %d and Parent Process ID: %d\n", getpid(), getppid());
@@ -231,7 +230,7 @@ LinkedList * map_processes(TpTable ** hashmap, LinkedList * list, int num_maps, 
 
 }
 
-void process_map(int start_index, int end_index, char * shared_memory) {
+void process_map(int start_index, int end_index, unsigned char * shared_memory) {
   int i = start_index;
   printf("Start Index: %d End Index: %d\n", start_index, end_index);
   while (i < end_index) {
@@ -280,7 +279,7 @@ int * determineMapSize(int num_words, int num_maps) {
 	return temp;
 }
 
-int * startEnd (TpTable ** map, LinkedList ** reduce_table, int map_or_reduce, char * sharedMemory, int array_length, int * word_sizes, int num_maps_reduces) {
+int * startEnd (TpTable ** map, LinkedList ** reduce_table, int map_or_reduce, unsigned char * sharedMemory, int array_length, int * word_sizes, int num_maps_reduces) {
   int * start_end = (int *) malloc(sizeof(int) * 2 * num_maps_reduces);
   if (map_or_reduce == 0) {
     printf("Inside StartEnd function\n");
@@ -527,7 +526,7 @@ LinkedList * reduce_processes(LinkedList ** reduce_table, int * reduce_size, int
 
   /*Convert Linked List to an array so that we can create a shared memory region that utilizes
   our array for the processes */
-  char * temp = table_to_array(reduce_table, reduce_size, num_reduces);
+  unsigned char * temp = table_to_array(reduce_table, reduce_size, num_reduces);
 
   /*determine the length of the array segment */
   int array_length = bytes_to_int(temp);
@@ -545,7 +544,7 @@ LinkedList * reduce_processes(LinkedList ** reduce_table, int * reduce_size, int
 
   ftruncate(sharedmem_fd, array_length);
 
-  char * ptr = (char *) mmap(&data_array, array_length, PROT_READ | PROT_WRITE, MAP_SHARED, sharedmem_fd, 0);
+  unsigned char * ptr = (unsigned char *) mmap(&data_array, array_length, PROT_READ | PROT_WRITE, MAP_SHARED, sharedmem_fd, 0);
 
   memcpy(ptr, temp, array_length);
   print_memory(ptr, array_length);
@@ -571,7 +570,6 @@ LinkedList * reduce_processes(LinkedList ** reduce_table, int * reduce_size, int
     }
   }
 
-  int n = num_reduces;
   for (i = 0; i < num_reduces; i++) {
     wait(NULL);
     printf("Ending Child Process ID: %d and Parent Process ID: %d\n", getpid(), getppid());
@@ -588,7 +586,7 @@ LinkedList * reduce_processes(LinkedList ** reduce_table, int * reduce_size, int
   return reduced_list;
 }
 
-void process_reduce(int start_index, int end_index, char * shared_memory, int num_words) {
+void process_reduce(int start_index, int end_index, unsigned char * shared_memory, int num_words) {
   printf("Inside Process Reduce\n");
   if (num_words == 0) {
     return;
@@ -693,7 +691,6 @@ void process_reduce(int start_index, int end_index, char * shared_memory, int nu
  */
 LinkedList* reduce(LinkedList** reduce_table, int num_reduces, int process, int app, char *outfile) {
   int i;
-  LinkedList* reduce_return = (LinkedList*) malloc(sizeof(LinkedList));
 
   if (process == 1) {
   //  run process code for reducers

@@ -94,7 +94,7 @@ int output_list(LinkedList* list, char* filename, int numbers) {
   // creates the file pointer by opening the file (if it exits) or creating it (if it does not yet exist)
   // also clears existing file data upon open
   remove(filename); //TODO this should be unnecessary, because of the below O_TRUNC flag, but the file is not cleared as expected upon open below, so this step simply deletes the file first if it exists
-  int output_file = open(filename, O_WRONLY|O_TRUNC|O_CREAT, 777);
+  int output_file = open(filename, O_RDWR|O_TRUNC|O_CREAT, 0777);
 
   Node* tmp = list->head;
   int i;

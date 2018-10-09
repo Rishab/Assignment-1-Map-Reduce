@@ -20,6 +20,8 @@ LinkedList** build_reduce(LinkedList* mapped_list, int num_reduces, int app);
 
 void print_memory(unsigned char *array, int size);
 
+void int_to_bytes(int i, unsigned char *c);
+
 int bytes_to_int(unsigned char *c);
 
 unsigned char *list_to_array(LinkedList *list);

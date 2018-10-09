@@ -667,18 +667,22 @@ void process_reduce(int start_index, int end_index, char * shared_memory, int nu
       printf("The two string are equal!\n");
       int temp_count = count1 + count2;
       printf("The merged counts are: %d\n", temp_count);
-      shared_memory[count2_index] = temp_count;
-      shared_memory[count1_index] = 0;
+      
+      int_to_bytes(temp_count, shared_memory + count2_index);
+      int_to_bytes(0, shared_memory + count1_index);
+         
+      //shared_memory[count2_index] = temp_count;
+      //shared_memory[count1_index] = 0;
 
       current_block_size1 = current_block_size2;
       printf("The current block_size: %d\n", current_block_size1);
-      count1 = count2;
+      count1 = temp_count;
       count1_index = count2_index;
       printf("The count of this word is: %d\n", count1);
       str_length1 = str_length2;
       str1_index = str2_index;
       printf("The length of the string is: %d and it starts at index: %d\n", str_length1, str1_index);
-
+      //i += current_block_size2;
     }
     printf("\n\n\n\n");
   }

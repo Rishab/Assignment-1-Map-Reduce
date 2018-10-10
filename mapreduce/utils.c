@@ -32,7 +32,7 @@ char **split(char *file, int m)
 
     int s = st.st_size;         // Get size of file in bytes.
 
-    printf("file size: %d\n", s);
+//    printf("file size: %d\n", s);
 
     int i;
     char b[2];
@@ -240,7 +240,7 @@ void print_memory(unsigned char *array, int size) {
  * Turns a linked list of words and counts into a contiguous array.
  * Organization of the array:
  * First 4 bytes are metadata, tell the # of words in the array.
- * After first 4 bytes (aka 1 int) , we have a bunch of blocks,
+ * After first 4 bytes (aka 1 int), we have a bunch of blocks,
  * each corresponding with a word.
  * Each block has:
  *  - 4 bytes (1 int) to tell the size of the block
@@ -253,7 +253,7 @@ unsigned char *list_to_array(LinkedList *list)
     if (!list) { return NULL; }
 
     int num_words = list->size;
-    printf("The number of words in the list according to list to array is: %d\n", num_words);
+//    printf("The number of words in the list according to list to array is: %d\n", num_words);
     int size = sizeof(int) * 2;         // Need at least two ints of metadata.
 
     Node *ptr = list->head;
@@ -264,7 +264,7 @@ unsigned char *list_to_array(LinkedList *list)
         ptr = ptr->next;
     }
 
-    printf("Size of list: %d\n", size);
+//    printf("Size of list: %d\n", size);
 
     unsigned char *array = (unsigned char *) calloc(size, size);
 
@@ -296,7 +296,7 @@ unsigned char *list_to_array(LinkedList *list)
         ptr = ptr->next;
     }
 
-    print_memory(array, size);
+//    print_memory(array, size);
 
     return array;
 }
@@ -322,7 +322,7 @@ unsigned char * table_to_array(LinkedList ** reduce_table, int * reduce_size, in
     }
   }
 
-  printf("Size of list: %d\n", size);
+//  printf("Size of list: %d\n", size);
 
   unsigned char * array = (unsigned char *) calloc(size, size);
 
@@ -363,7 +363,7 @@ unsigned char * table_to_array(LinkedList ** reduce_table, int * reduce_size, in
     index++;
   }
 
-  print_memory(array, size);
+//  print_memory(array, size);
 
   return array;
 }
@@ -402,7 +402,7 @@ LinkedList *array_to_list(unsigned char *arr)
     int i = 4;
     int num_words = bytes_to_int(arr + i);
     i += 4;
-    printf("num_words: %d\n", num_words);
+//    printf("num_words: %d\n", num_words);
 
     LinkedList *list = create_empty_list();
 

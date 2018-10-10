@@ -68,7 +68,7 @@ LinkedList *word_count_parse(char *file)
     while (i < WC_BUF_SIZE - 1) {
         // Read into buffer, one character at a time.
         read_bytes = read(fd, buffer + i, 1);
-        printf("buffer: %s\n", buffer);
+//        printf("buffer: %s\n", buffer);
         if (read_bytes == 0) {
             // At the end of the file, so we have to make a token out of
             // whatever we have in token and partial_token.
@@ -81,7 +81,7 @@ LinkedList *word_count_parse(char *file)
             token = merge_tokens(partial_token, token);
 
             if (strcmp(token, "") != 0) {
-                printf("found token case 1: %s\n", token);
+//                printf("found token case 1: %s\n", token);
                 // Don't have a blank token, so insert into the list.
                 if (word_list->head != NULL) {
                   word_ptr->next = create_node(token, 0);
@@ -107,12 +107,12 @@ LinkedList *word_count_parse(char *file)
             // Allocate what we scanned, plus 1 byte for null terminator.
             token = (char *) calloc(sizeof(char) * i + 1, sizeof(char) * i + 1);
             strncpy(token, buffer, i);
-            printf("token before merge: %s\n", token);
+//            printf("token before merge: %s\n", token);
             // Merge the overflow (if we have any) and the token we just scanned.
             token = merge_tokens(partial_token, token);
             if (strcmp(token, "") != 0) {
 
-                printf("found token case 2: %s\n", token);
+//                printf("found token case 2: %s\n", token);
                 if (word_list->head != NULL) {
                     word_ptr->next = create_node(token, 0);
                     word_ptr = word_ptr->next;

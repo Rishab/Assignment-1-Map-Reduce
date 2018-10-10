@@ -12,11 +12,13 @@
 #include <sys/shm.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <time.h>
 
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <sys/time.h>
 
 #include "mapred.h"
 #include "structures.h"
@@ -835,21 +837,39 @@ int main(int argc, char **argv) {
       fprintf(stderr, "Invalid number of reduces for --reduces (must be an integer > 0): %s\n", argv[8]);
       return 1;
     }
+    
+    struct timeval t_start;       // Start time.
+    struct timeval t_mapped;      // Time after map()
+    struct timeval t_reduced;     // Time after reduce()
+
+    gettimeofday(&t_start, NULL);
 
     global_map_list = map(input_file_path, processes, num_maps);
 
+    gettimeofday(&t_mapped, NULL);
+
     LinkedList **reduce_table = build_reduce(global_map_list, num_reduces, app);
 
-    printf("Printing reduce table...\n");
+    //printf("Printing reduce table...\n");
     //print_table(reduce_table, num_reduces);
-    printf("Creating global_reduce_list...\n");
+    //printf("Creating global_reduce_list...\n");
 
     global_reduce_list = reduce(reduce_table, num_reduces, processes, app, output_file_path);
-    printf("Made it to main!\n");
+    //printf("Made it to main!\n");
+    
+    gettimeofday(&t_reduced, NULL);
+    
 
+    double start_time = t_start.tv_sec + t_start.tv_usec / 1000000;
+    double map_time = t_mapped.tv_sec + t_mapped.tv_usec / 1000000;
+    double reduce_time = t_reduced.tv_sec + t_reduced.tv_usec / 1000000;
 
-    printf("Global reduce list size: %d\n", global_reduce_list->size);
-   // traverse(global_reduce_list, 1);
+    printf("Time from start through map(): %f sec\n", map_time - start_time);
+    printf("Time from map() through reduce(): %f sec\n", reduce_time - map_time);
+    printf("Total time: %f sec\n", reduce_time - start_time);
+
+    //printf("Global reduce list size: %d\n", global_reduce_list->size);
+    //traverse(global_reduce_list, 1);
 
     output_list(global_reduce_list, output_file_path, app);
 
